@@ -1,0 +1,21 @@
+{
+  "name": "WordJoiner TikTok Tool",
+  "short_name": "WordJoiner",
+  "description": "أداة لمنع دمج الكلمات عند النسخ إلى TikTok",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#fe2c55",
+  "icons": [
+    {
+      "src": "icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
