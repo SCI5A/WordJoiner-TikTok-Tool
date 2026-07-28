@@ -1,94 +1,202 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // DOM Elements
     const inputText = document.getElementById('inputText');
     const outputText = document.getElementById('outputText');
+    const joinerType = document.getElementById('joinerType');
     const convertBtn = document.getElementById('convertBtn');
+    const autoBtn = document.getElementById('autoBtn');
     const clearBtn = document.getElementById('clearBtn');
+    const pasteBtn = document.getElementById('pasteBtn');
     const copyBtn = document.getElementById('copyBtn');
-    const inputCount = document.getElementById('inputCount');
-    const outputCount = document.getElementById('outputCount');
-    const joinerRadios = document.getElementsByName('joinerType');
+    const shareBtn = document.getElementById('shareBtn');
+    const undoBtn = document.getElementById('undoBtn');
+    const themeToggle = document.getElementById('themeToggle');
+    const inputStats = document.getElementById('inputStats');
+    const outputStats = document.getElementById('outputStats');
+    const quranWarning = document.getElementById('quranWarning');
+    const toast = document.getElementById('toast');
 
-    // تحديث عداد الأحرف عند الكتابة
-    inputText.addEventListener('input', () => {
-        inputCount.textContent = inputText.value.length;
+    // State
+    let history = {
+        previousInput: '',
+        previousOutput: ''
+    };
+
+    // Theme Management
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.body.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = document.body.getAttribute('data-theme');
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        document.body.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        updateThemeIcon(newTheme);
     });
 
-    // وظيفة التحويل
+    function updateThemeIcon(theme) {
+        const icon = themeToggle.querySelector('i');
+        icon.className = theme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+    }
+
+    // Input Stats & Quran Detection
+    inputText.addEventListener('input', () => {
+        updateStats();
+        detectQuranicText();
+    });
+
+    function updateStats() {
+        const text = inputText.value;
+        const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+        const chars = text.length;
+        const size = new Blob([text]).size;
+        
+        inputStats.textContent = `الكلمات: ${words} | الأحرف: ${chars} | الحجم: ${size} B`;
+    }
+
+    function detectQuranicText() {
+        // Simple detection for Quranic markers or common words
+        const quranicMarkers = /[\u0610-\u061A\u064B-\u065F\u06D6-\u06DC\u06DF-\u06E8\u06EA-\u06ED]/;
+        if (quranicMarkers.test(inputText.value)) {
+            quranWarning.classList.remove('hidden');
+        } else {
+            quranWarning.classList.add('hidden');
+        }
+    }
+
+    // Processing Logic
+    const joiners = {
+        'U+2060': '\u2060', // Word Joiner
+        'U+200D': '\u200D', // Zero Width Joiner
+        'U+200C': '\u200C', // Zero Width Non-Joiner
+        'U+200A': '\u200A', // Hair Space
+        'U+2009': '\u2009', // Thin Space
+        'U+00A0': '\u00A0'  // Non Breaking Space
+    };
+
     convertBtn.addEventListener('click', () => {
+        processText(joinerType.value);
+    });
+
+    autoBtn.addEventListener('click', () => {
+        // Auto chooses Word Joiner as it's usually the most effective for TikTok
+        processText('U+2060');
+        showToast('تم تطبيق أفضل طريقة تلقائيًا');
+    });
+
+    function processText(type) {
         const text = inputText.value;
         if (!text) {
-            alert('الرجاء إدخال نص أولاً');
+            showToast('الرجاء إدخال نص أولاً');
             return;
         }
 
-        let joiner = '';
-        const selectedType = Array.from(joinerRadios).find(r => r.checked).value;
+        // Save to history before changing
+        history.previousInput = inputText.value;
+        history.previousOutput = outputText.value;
+        undoBtn.disabled = false;
 
-        switch (selectedType) {
-            case 'U+2060': joiner = '\u2060'; break;
-            case 'U+200D': joiner = '\u200D'; break;
-            case 'U+200C': joiner = '\u200C'; break;
-            case 'U+2009': joiner = '\u2009'; break;
-            default: joiner = '\u2060';
-        }
+        const joiner = joiners[type] || joiners['U+2060'];
+        let result = '';
 
-        // تقسيم النص إلى كلمات وإعادة دمجها باستخدام المحرف المختار
-        // نستخدم regex للحفاظ على المسافات وعلامات التشكيل
-        // الفكرة هي وضع المحرف بين كل حرفين في الكلمات العربية لمنع التعرف عليها ككلمة واحدة قابلة للدمج
-        // أو ببساطة وضعه بعد كل حرف
-        
-        let processedText = '';
+        // Regex to identify Arabic characters and diacritics
+        // We want to avoid inserting joiners between a character and its diacritic
+        const arabicCharRegex = /[\u0600-\u06FF]/;
+        const diacriticRegex = /[\u064B-\u065F\u0610-\u061A]/;
+
         for (let i = 0; i < text.length; i++) {
-            processedText += text[i];
-            // إضافة المحرف إذا كان الحرف الحالي ليس مسافة والحرف التالي ليس مسافة وليس نهاية النص
-            if (text[i] !== ' ' && text[i] !== '\n' && i < text.length - 1 && text[i+1] !== ' ' && text[i+1] !== '\n') {
-                processedText += joiner;
+            result += text[i];
+            
+            // Conditions for adding joiner:
+            // 1. Current char is Arabic
+            // 2. Next char exists and is Arabic
+            // 3. Next char is not a diacritic (to keep diacritics attached)
+            // 4. Current char is not a space/newline
+            if (i < text.length - 1) {
+                const currentChar = text[i];
+                const nextChar = text[i+1];
+                
+                if (arabicCharRegex.test(currentChar) && 
+                    arabicCharRegex.test(nextChar) && 
+                    !diacriticRegex.test(nextChar) &&
+                    currentChar !== ' ' && currentChar !== '\n') {
+                    result += joiner;
+                }
             }
         }
 
-        outputText.value = processedText;
-        outputCount.textContent = processedText.length;
-    });
+        outputText.value = result;
+        outputStats.textContent = `الأحرف بعد التحويل: ${result.length}`;
+    }
 
-    // وظيفة المسح
+    // Actions
     clearBtn.addEventListener('click', () => {
         inputText.value = '';
         outputText.value = '';
-        inputCount.textContent = '0';
-        outputCount.textContent = '0';
+        updateStats();
+        detectQuranicText();
+        outputStats.textContent = 'الأحرف بعد التحويل: 0';
+        showToast('تم مسح النص');
     });
 
-    // وظيفة النسخ
+    pasteBtn.addEventListener('click', async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            inputText.value = text;
+            updateStats();
+            detectQuranicText();
+            showToast('تم لصق النص');
+        } catch (err) {
+            showToast('فشل اللصق، يرجى المحاولة يدوياً');
+        }
+    });
+
     copyBtn.addEventListener('click', () => {
         if (!outputText.value) return;
+        
+        navigator.clipboard.writeText(outputText.value).then(() => {
+            showToast('تم نسخ النص المحمي!');
+        }).catch(() => {
+            // Fallback
+            outputText.select();
+            document.execCommand('copy');
+            showToast('تم النسخ!');
+        });
+    });
 
-        // طريقة متوافقة مع iOS و Android
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(outputText.value).then(() => {
-                const originalText = copyBtn.textContent;
-                copyBtn.textContent = 'تم النسخ!';
-                copyBtn.style.backgroundColor = '#4bb543';
-                setTimeout(() => {
-                    copyBtn.textContent = originalText;
-                    copyBtn.style.backgroundColor = '';
-                }, 2000);
-            }).catch(err => {
-                console.error('فشل النسخ: ', err);
-                fallbackCopy(outputText);
-            });
+    shareBtn.addEventListener('click', async () => {
+        if (!outputText.value) return;
+        
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'WordJoiner PRO',
+                    text: outputText.value
+                });
+            } catch (err) {
+                console.log('Error sharing:', err);
+            }
         } else {
-            fallbackCopy(outputText);
+            showToast('المشاركة غير مدعومة في هذا المتصفح');
         }
     });
 
-    function fallbackCopy(element) {
-        element.select();
-        element.setSelectionRange(0, 99999); // للهواتف
-        try {
-            document.execCommand('copy');
-            alert('تم نسخ النص بنجاح');
-        } catch (err) {
-            alert('عذراً، فشل النسخ التلقائي');
-        }
+    undoBtn.addEventListener('click', () => {
+        inputText.value = history.previousInput;
+        outputText.value = history.previousOutput;
+        updateStats();
+        detectQuranicText();
+        undoBtn.disabled = true;
+        showToast('تمت استعادة النص السابق');
+    });
+
+    // Toast Utility
+    function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
     }
 });

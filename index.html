@@ -2,78 +2,113 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>أداة منع دمج الكلمات - WordJoiner TikTok Tool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WordJoiner PRO - Arabic Text Protector</title>
+    <meta name="description" content="أداة احترافية لحماية النصوص العربية من الدمج في تطبيقات التواصل الاجتماعي مثل TikTok وWhatsApp">
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#fe2c55">
+    <meta name="theme-color" content="#6200ee">
     <link rel="icon" href="icons/icon-192x192.png" type="image/png">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body>
-    <div class="container">
+<body class="light-mode">
+    <div class="app-container">
         <header>
-            <h1>أداة منع دمج الكلمات</h1>
-            <p>امنع دمج الكلمات في TikTok والتطبيقات الأخرى</p>
+            <div class="header-content">
+                <div class="logo-area">
+                    <img src="icons/icon-72x72.png" alt="Logo" class="app-logo">
+                    <div class="title-group">
+                        <h1>WordJoiner PRO</h1>
+                        <span class="subtitle">Arabic Text Protector</span>
+                    </div>
+                </div>
+                <button id="themeToggle" class="icon-btn" title="تبديل الوضع الليلي">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
         </header>
 
         <main>
-            <div class="input-section">
-                <label for="inputText">النص الأصلي:</label>
-                <textarea id="inputText" placeholder="أدخل أو ألصق النص هنا..."></textarea>
-                <div class="stats">
-                    عدد الأحرف: <span id="inputCount">0</span>
+            <!-- Input Section -->
+            <section class="card input-card">
+                <div class="card-header">
+                    <label for="inputText"><i class="fas fa-pen-nib"></i> النص الأصلي</label>
+                    <div class="header-actions">
+                        <button id="pasteBtn" class="text-btn"><i class="fas fa-paste"></i> لصق</button>
+                        <button id="clearBtn" class="text-btn danger"><i class="fas fa-trash-alt"></i> مسح</button>
+                    </div>
                 </div>
+                <textarea id="inputText" placeholder="اكتب أو ألصق النص هنا..."></textarea>
+                <div class="stats-bar">
+                    <span id="inputStats">الكلمات: 0 | الأحرف: 0 | الحجم: 0 B</span>
+                </div>
+            </section>
+
+            <!-- Warning for Quranic Text -->
+            <div id="quranWarning" class="warning-box hidden">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>تم اكتشاف نص قد يحتوي على آيات قرآنية. سيتم الحفاظ على التشكيل وعلامات الوقف بدقة.</span>
             </div>
 
-            <div class="options-section">
-                <label>طريقة المعالجة:</label>
-                <div class="radio-group">
-                    <label class="radio-item">
-                        <input type="radio" name="joinerType" value="U+2060" checked>
-                        <span>Word Joiner (U+2060)</span>
-                    </label>
-                    <label class="radio-item">
-                        <input type="radio" name="joinerType" value="U+200D">
-                        <span>Zero Width Joiner (U+200D)</span>
-                    </label>
-                    <label class="radio-item">
-                        <input type="radio" name="joinerType" value="U+200C">
-                        <span>Zero Width Non Joiner (U+200C)</span>
-                    </label>
-                    <label class="radio-item">
-                        <input type="radio" name="joinerType" value="U+2009">
-                        <span>Thin Space (U+2009)</span>
-                    </label>
+            <!-- Options Section -->
+            <section class="card options-card">
+                <div class="card-header">
+                    <label><i class="fas fa-cog"></i> خيارات المعالجة</label>
                 </div>
-            </div>
-
-            <div class="actions">
-                <button id="convertBtn" class="primary-btn">تحويل النص</button>
-                <button id="clearBtn" class="secondary-btn">مسح النص</button>
-            </div>
-
-            <div class="output-section">
-                <label for="outputText">النص الناتج:</label>
-                <textarea id="outputText" readonly placeholder="سيظهر النص المعالج هنا..."></textarea>
-                <div class="stats">
-                    عدد الأحرف: <span id="outputCount">0</span>
+                <div class="options-grid">
+                    <button id="autoBtn" class="primary-btn pulse">
+                        <i class="fas fa-magic"></i> تجربة أفضل طريقة تلقائيًا
+                    </button>
+                    <div class="custom-select-wrapper">
+                        <select id="joinerType">
+                            <option value="U+2060">Word Joiner (U+2060)</option>
+                            <option value="U+200D">Zero Width Joiner (U+200D)</option>
+                            <option value="U+200C">Zero Width Non-Joiner (U+200C)</option>
+                            <option value="U+200A">Hair Space (U+200A)</option>
+                            <option value="U+2009">Thin Space (U+2009)</option>
+                            <option value="U+00A0">Non Breaking Space (U+00A0)</option>
+                        </select>
+                    </div>
                 </div>
-                <button id="copyBtn" class="copy-btn">نسخ النص</button>
-            </div>
+                <button id="convertBtn" class="secondary-btn">تحويل الآن</button>
+            </section>
+
+            <!-- Output Section -->
+            <section class="card output-card">
+                <div class="card-header">
+                    <label for="outputText"><i class="fas fa-check-circle"></i> النص الناتج</label>
+                    <button id="undoBtn" class="text-btn" disabled><i class="fas fa-undo"></i> استعادة السابق</button>
+                </div>
+                <textarea id="outputText" readonly placeholder="سيظهر النص المحمي هنا..."></textarea>
+                <div class="stats-bar">
+                    <span id="outputStats">الأحرف بعد التحويل: 0</span>
+                </div>
+                <div class="action-grid">
+                    <button id="copyBtn" class="action-btn copy"><i class="fas fa-copy"></i> نسخ</button>
+                    <button id="shareBtn" class="action-btn share"><i class="fas fa-share-alt"></i> مشاركة</button>
+                </div>
+            </section>
         </main>
 
         <footer>
-            <p>WordJoiner TikTok Tool &copy; 2024</p>
+            <p>&copy; 2026 WordJoiner PRO | <a href="https://github.com/sci5a/WordJoiner-TikTok-Tool" target="_blank">GitHub</a></p>
         </footer>
     </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">تم النسخ بنجاح!</div>
 
     <script src="script.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('Service Worker registered'))
-                    .catch(err => console.log('Service Worker registration failed', err));
+                    .then(reg => console.log('PWA Service Worker registered'))
+                    .catch(err => console.log('PWA Service Worker registration failed', err));
             });
         }
     </script>
