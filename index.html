@@ -26,9 +26,17 @@
                         <span class="subtitle">Arabic Text Protector</span>
                     </div>
                 </div>
-                <button id="themeToggle" class="icon-btn" title="تبديل الوضع الليلي">
-                    <i class="fas fa-moon"></i>
-                </button>
+                <div class="header-buttons">
+                    <button id="historyBtn" class="icon-btn" title="سجل التحويلات">
+                        <i class="fas fa-history"></i>
+                    </button>
+                    <button id="settingsBtn" class="icon-btn" title="الإعدادات">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <button id="themeToggle" class="icon-btn" title="تبديل الوضع الليلي">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -54,10 +62,29 @@
                 <span>تم اكتشاف نص قد يحتوي على آيات قرآنية. سيتم الحفاظ على التشكيل وعلامات الوقف بدقة.</span>
             </div>
 
+            <!-- Preview Section -->
+            <section class="card preview-card hidden">
+                <div class="card-header">
+                    <label><i class="fas fa-eye"></i> معاينة المقارنة</label>
+                    <button id="closePreview" class="text-btn"><i class="fas fa-times"></i> إغلاق</button>
+                </div>
+                <div class="preview-content">
+                    <div class="preview-item">
+                        <h4>النص الأصلي</h4>
+                        <div id="previewOriginal" class="preview-text"></div>
+                    </div>
+                    <div class="preview-item">
+                        <h4>النص المعالج</h4>
+                        <div id="previewProcessed" class="preview-text"></div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Options Section -->
             <section class="card options-card">
                 <div class="card-header">
                     <label><i class="fas fa-cog"></i> خيارات المعالجة</label>
+                    <button id="advancedToggle" class="text-btn"><i class="fas fa-sliders-h"></i> متقدم</button>
                 </div>
                 <div class="options-grid">
                     <button id="autoBtn" class="primary-btn pulse">
@@ -74,6 +101,34 @@
                         </select>
                     </div>
                 </div>
+
+                <!-- Advanced Options -->
+                <div id="advancedOptions" class="advanced-options hidden">
+                    <div class="option-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="preserveDiacritics" checked>
+                            <span>الحفاظ على التشكيل والحروف الإضافية</span>
+                        </label>
+                    </div>
+                    <div class="option-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="smartSpacing">
+                            <span>تحسين المسافات الذكية</span>
+                        </label>
+                    </div>
+                    <div class="option-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="preserveNumbers">
+                            <span>الحفاظ على الأرقام والرموز</span>
+                        </label>
+                    </div>
+                    <div class="option-group">
+                        <label>نسبة التطبيق:</label>
+                        <input type="range" id="applicationRatio" min="0" max="100" value="100" class="slider">
+                        <span id="ratioValue">100%</span>
+                    </div>
+                </div>
+
                 <button id="convertBtn" class="secondary-btn">تحويل الآن</button>
             </section>
 
@@ -90,6 +145,19 @@
                 <div class="action-grid">
                     <button id="copyBtn" class="action-btn copy"><i class="fas fa-copy"></i> نسخ</button>
                     <button id="shareBtn" class="action-btn share"><i class="fas fa-share-alt"></i> مشاركة</button>
+                    <button id="previewBtn" class="action-btn preview"><i class="fas fa-eye"></i> معاينة</button>
+                    <button id="saveBtn" class="action-btn save"><i class="fas fa-save"></i> حفظ</button>
+                </div>
+            </section>
+
+            <!-- Saved Texts Section -->
+            <section class="card saved-texts-card hidden">
+                <div class="card-header">
+                    <label><i class="fas fa-bookmark"></i> النصوص المحفوظة</label>
+                    <button id="clearSavedBtn" class="text-btn danger"><i class="fas fa-trash-alt"></i> مسح الكل</button>
+                </div>
+                <div id="savedTextsList" class="saved-texts-list">
+                    <p class="empty-message">لا توجد نصوص محفوظة</p>
                 </div>
             </section>
         </main>
@@ -97,6 +165,55 @@
         <footer>
             <p>&copy; 2026 WordJoiner PRO | <a href="https://github.com/sci5a/WordJoiner-TikTok-Tool" target="_blank">GitHub</a></p>
         </footer>
+    </div>
+
+    <!-- Modals -->
+    <!-- History Modal -->
+    <div id="historyModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-history"></i> سجل التحويلات</h2>
+                <button class="close-btn" data-modal="historyModal"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="historyList" class="history-list">
+                <p class="empty-message">لا يوجد سجل تحويلات</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-cog"></i> الإعدادات</h2>
+                <button class="close-btn" data-modal="settingsModal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="settings-content">
+                <div class="setting-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="autoSaveSettings" checked>
+                        <span>الحفظ التلقائي للنصوص</span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="showNotifications" checked>
+                        <span>إظهار الإشعارات</span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="enableHistory" checked>
+                        <span>تفعيل سجل التحويلات</span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label>عدد السجلات المحفوظة:</label>
+                    <input type="number" id="maxHistoryItems" min="5" max="100" value="20" class="input-field">
+                </div>
+                <button id="clearAllData" class="danger-btn"><i class="fas fa-trash-alt"></i> مسح جميع البيانات</button>
+            </div>
+        </div>
     </div>
 
     <!-- Toast Notification -->
