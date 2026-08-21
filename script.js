@@ -304,6 +304,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function insertPastedText(text) {
         const repairedText = repairIncomingText(text);
         const currentText = inputText.value;
+
+        // Keep paste undoable, including the repaired text and the previous output.
+        appState.history.previousInput = currentText;
+        appState.history.previousOutput = outputText.value;
+        undoBtn.disabled = false;
         const hasFocus = document.activeElement === inputText;
         const start = hasFocus ? inputText.selectionStart : currentText.length;
         const end = hasFocus ? inputText.selectionEnd : currentText.length;
