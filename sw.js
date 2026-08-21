@@ -1,4 +1,5 @@
-const CACHE_NAME = 'wordjoiner-pro-v1';
+// Bump this whenever a processing rule changes so installed PWAs receive the fix.
+const CACHE_NAME = 'wordjoiner-pro-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -19,6 +20,8 @@ const ASSETS = [
 
 // Install Service Worker
 self.addEventListener('install', event => {
+  // Activate the updated worker without waiting for every old tab to close.
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
@@ -31,12 +34,14 @@ self.addEventListener('install', event => {
 // Activate Service Worker
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys => {
-      return Promise.all(keys
-        .filter(key => key !== CACHE_NAME)
-        .map(key => caches.delete(key))
-      );
-    })
+    Promise.all([
+      self.clients.claim(),
+      caches.keys().then(keys => Promise.all(
+        keys
+          .filter(key => key !== CACHE_NAME)
+          .map(key => caches.delete(key))
+      ))
+    ])
   );
 });
 

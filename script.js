@@ -201,54 +201,8 @@ document.addEventListener('DOMContentLoaded', () => {
         undoBtn.disabled = false;
 
         const joiner = joiners[type] || joiners['U+2060'];
-        let result = '';
-
-        // Regex patterns
-        const arabicCharRegex = /[\u0600-\u06FF]/;
-        const diacriticRegex = /[\u064B-\u065F\u0610-\u061A]/;
-        const numberRegex = /[\d\u0660-\u0669]/;
-
-        const ratio = parseInt(applicationRatio.value) / 100;
-        const preserve = preserveDiacritics.checked;
-        const smart = smartSpacing.checked;
-        const preserveNum = preserveNumbers.checked;
-
-        for (let i = 0; i < text.length; i++) {
-            result += text[i];
-            
-            if (i < text.length - 1) {
-                const currentChar = text[i];
-                const nextChar = text[i + 1];
-                
-                // Determine if we should add a joiner
-                let shouldAddJoiner = false;
-
-                if (arabicCharRegex.test(currentChar) && 
-                    arabicCharRegex.test(nextChar) && 
-                    currentChar !== ' ' && currentChar !== '\n') {
-                    
-                    // Check diacritics preservation
-                    if (preserve && diacriticRegex.test(nextChar)) {
-                        shouldAddJoiner = false;
-                    } else if (smart && nextChar === ' ') {
-                        shouldAddJoiner = false;
-                    } else if (preserveNum && numberRegex.test(nextChar)) {
-                        shouldAddJoiner = false;
-                    } else {
-                        shouldAddJoiner = true;
-                    }
-                }
-
-                // Apply ratio
-                if (shouldAddJoiner && Math.random() > ratio) {
-                    shouldAddJoiner = false;
-                }
-
-                if (shouldAddJoiner) {
-                    result += joiner;
-                }
-            }
-        }
+        const ratio = Math.max(0, Math.min(100, parseInt(applicationRatio.value, 10) || 0)) / 100;
+        const result = protectWordBoundaries(text, type, joiner, ratio);
 
         outputText.value = result;
         outputStats.textContent = `الأحرف بعد التحويل: ${result.length}`;
@@ -262,6 +216,38 @@ document.addEventListener('DOMContentLoaded', () => {
         if (appState.settings.autoSave) {
             saveCurrentText();
         }
+    }
+
+    /**
+     * Protect existing word boundaries without inserting controls inside words.
+     *
+     * The old PRO implementation added a joiner between every pair of Arabic
+     * characters. TikTok can expose those controls as visible spacing, producing
+     * output such as "ف إ ذ ا". Word-boundary protection must only use the
+     * user's existing spaces, so Arabic shaping, diacritics, Quranic marks,
+     * punctuation, and line breaks remain unchanged.
+     */
+    function protectWordBoundaries(text, type, joiner, ratio = 1) {
+        // Remove U+2060 controls from an earlier WordJoiner conversion. This
+        // also repairs text produced by the cached version of the old algorithm.
+        // Other ZWJ/ZWNJ characters are preserved because they may be legitimate
+        // parts of user-provided Arabic or emoji text.
+        const cleanText = text.replace(/\u2060/gu, '');
+        const isSpaceBasedMethod = type === 'U+200A' || type === 'U+2009' || type === 'U+00A0';
+
+        return cleanText.replace(/([ \t]+)/gu, spaces => {
+            // The advanced ratio now applies to word boundaries, never to the
+            // interior of a word. The default (100%) protects every boundary.
+            if (ratio < 1 && Math.random() >= ratio) {
+                return spaces;
+            }
+
+            // Space-based methods replace the original whitespace; invisible
+            // controls keep the original visible spacing after the marker.
+            return isSpaceBasedMethod
+                ? spaces.replace(/[ \t]/gu, joiner)
+                : `${joiner}${spaces}`;
+        });
     }
 
     // ==================== Statistics ====================
