@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const preserveDiacritics = document.getElementById('preserveDiacritics');
     const smartSpacing = document.getElementById('smartSpacing');
     const preserveNumbers = document.getElementById('preserveNumbers');
+    const autoRepairSpacing = document.getElementById('autoRepairSpacing');
     const applicationRatio = document.getElementById('applicationRatio');
     const ratioValue = document.getElementById('ratioValue');
     
@@ -62,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
             autoSave: true,
             showNotifications: true,
             enableHistory: true,
+            autoRepairSpacing: true,
             maxHistoryItems: 20
         }
     };
@@ -104,6 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateStats();
             detectQuranicText();
         });
+        inputText.addEventListener('paste', handlePasteEvent);
 
         // Button Events
         convertBtn.addEventListener('click', () => {
@@ -166,6 +169,11 @@ document.addEventListener('DOMContentLoaded', () => {
             saveSettings();
         });
 
+        autoRepairSpacing.addEventListener('change', (e) => {
+            appState.settings.autoRepairSpacing = e.target.checked;
+            saveSettings();
+        });
+
         clearAllData.addEventListener('click', clearAllAppData);
 
         // Modal Background Click
@@ -189,14 +197,21 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function processText(type) {
-        const text = inputText.value;
+        const rawText = inputText.value;
+        const text = repairIncomingText(rawText);
         if (!text) {
             showToast('الرجاء إدخال نص أولاً', 'warning');
             return;
         }
 
         // Save to history before changing
-        appState.history.previousInput = inputText.value;
+        appState.history.previousInput = rawText;
+        if (text !== rawText) {
+            inputText.value = text;
+            updateStats();
+            detectQuranicText();
+            showToast('تم إصلاح المسافات العربية تلقائيًا', 'info');
+        }
         appState.history.previousOutput = outputText.value;
         undoBtn.disabled = false;
 
@@ -279,13 +294,43 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('تم مسح النص', 'success');
     }
 
+    function repairIncomingText(text) {
+        if (!autoRepairSpacing.checked || typeof window.repairArabicSpacing !== 'function') {
+            return text;
+        }
+        return window.repairArabicSpacing(text, { removeZeroWidth: true });
+    }
+
+    function insertPastedText(text) {
+        const repairedText = repairIncomingText(text);
+        const currentText = inputText.value;
+        const hasFocus = document.activeElement === inputText;
+        const start = hasFocus ? inputText.selectionStart : currentText.length;
+        const end = hasFocus ? inputText.selectionEnd : currentText.length;
+
+        inputText.value = currentText.slice(0, start) + repairedText + currentText.slice(end);
+        const caret = start + repairedText.length;
+        inputText.focus();
+        inputText.setSelectionRange(caret, caret);
+        updateStats();
+        detectQuranicText();
+        return repairedText !== text;
+    }
+
+    function handlePasteEvent(event) {
+        const pastedText = event.clipboardData?.getData('text/plain') || '';
+        if (!pastedText) return;
+
+        event.preventDefault();
+        const repaired = insertPastedText(pastedText);
+        showToast(repaired ? 'تم اللصق وإصلاح المسافات العربية تلقائيًا' : 'تم لصق النص', 'success');
+    }
+
     async function pasteFromClipboard() {
         try {
             const text = await navigator.clipboard.readText();
-            inputText.value = text;
-            updateStats();
-            detectQuranicText();
-            showToast('تم لصق النص', 'success');
+            const repaired = insertPastedText(text);
+            showToast(repaired ? 'تم اللصق وإصلاح المسافات العربية تلقائيًا' : 'تم لصق النص', 'success');
         } catch (err) {
             showToast('فشل اللصق، يرجى المحاولة يدوياً', 'error');
         }
@@ -508,6 +553,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         autoSaveSettings.checked = appState.settings.autoSave;
+        autoRepairSpacing.checked = appState.settings.autoRepairSpacing !== false;
         showNotifications.checked = appState.settings.showNotifications;
         enableHistory.checked = appState.settings.enableHistory;
         maxHistoryItems.value = appState.settings.maxHistoryItems;

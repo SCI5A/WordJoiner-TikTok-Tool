@@ -123,6 +123,12 @@
                         </label>
                     </div>
                     <div class="option-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="autoRepairSpacing" checked>
+                            <span>إصلاح المسافات العربية تلقائيًا</span>
+                        </label>
+                    </div>
+                    <div class="option-group">
                         <label>نسبة التطبيق:</label>
                         <input type="range" id="applicationRatio" min="0" max="100" value="100" class="slider">
                         <span id="ratioValue">100%</span>
@@ -219,6 +225,7 @@
     <!-- Toast Notification -->
     <div id="toast" class="toast hidden">تم النسخ بنجاح!</div>
 
+    <script src="arabic-spacing.js"></script>
     <script src="script.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
