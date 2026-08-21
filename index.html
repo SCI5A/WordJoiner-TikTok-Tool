@@ -158,9 +158,15 @@
 
             <!-- Saved Texts Section -->
             <section class="card saved-texts-card hidden">
-                <div class="card-header">
-                    <label><i class="fas fa-bookmark"></i> النصوص المحفوظة</label>
+                <div class="card-header saved-texts-header">
+                    <div class="saved-title">
+                        <label><i class="fas fa-bookmark"></i> النصوص المحفوظة</label>
+                        <span id="savedCount" class="saved-count">0</span>
+                    </div>
                     <button id="clearSavedBtn" class="text-btn danger"><i class="fas fa-trash-alt"></i> مسح الكل</button>
+                </div>
+                <div class="saved-tools">
+                    <input id="savedSearch" class="saved-search" type="search" placeholder="ابحث في السجل المحلي..." autocomplete="off">
                 </div>
                 <div id="savedTextsList" class="saved-texts-list">
                     <p class="empty-message">لا توجد نصوص محفوظة</p>

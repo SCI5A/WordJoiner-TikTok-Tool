@@ -37,6 +37,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveBtn = document.getElementById('saveBtn');
     const savedTextsCard = document.querySelector('.saved-texts-card');
     const savedTextsList = document.getElementById('savedTextsList');
+    const savedSearch = document.getElementById('savedSearch');
+    const savedCount = document.getElementById('savedCount');
     const clearSavedBtn = document.getElementById('clearSavedBtn');
     
     // History & Settings
@@ -134,6 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Save
         saveBtn.addEventListener('click', saveCurrentText);
+        savedSearch.addEventListener('input', updateSavedTextsList);
         clearSavedBtn.addEventListener('click', clearAllSavedTexts);
 
         // History & Settings
@@ -229,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Auto save
         if (appState.settings.autoSave) {
-            saveCurrentText();
+            saveCurrentText({ silent: true });
         }
     }
 
@@ -411,52 +414,128 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==================== Save Functionality ====================
-    function saveCurrentText() {
+    const MAX_SAVED_TEXTS = 100;
+
+    function persistSavedTexts() {
+        try {
+            localStorage.setItem('wordjoiner_saved_texts', JSON.stringify(appState.savedTexts));
+            return true;
+        } catch (error) {
+            // Keep the newest records if the browser storage quota is reached.
+            appState.savedTexts = appState.savedTexts.slice(0, 25);
+            try {
+                localStorage.setItem('wordjoiner_saved_texts', JSON.stringify(appState.savedTexts));
+            } catch (retryError) {
+                console.warn('Unable to persist saved texts:', retryError);
+                showToast('تعذر حفظ السجل المحلي بسبب امتلاء التخزين', 'warning');
+                return false;
+            }
+            showToast('تم تقليص السجل تلقائيًا بسبب مساحة التخزين', 'warning');
+            return false;
+        }
+    }
+
+    function saveCurrentText({ silent = false } = {}) {
         if (!outputText.value) {
-            showToast('لا يوجد نص للحفظ', 'warning');
-            return;
+            if (!silent) showToast('لا يوجد نص للحفظ', 'warning');
+            return false;
         }
 
-        const savedText = {
-            id: Date.now(),
-            original: inputText.value,
-            processed: outputText.value,
-            joinerType: joinerType.value,
-            timestamp: new Date().toLocaleString('ar-SA')
-        };
+        const original = inputText.value;
+        const processed = outputText.value;
+        const now = Date.now();
+        const existing = appState.savedTexts.find(item =>
+            item.original === original &&
+            item.processed === processed &&
+            item.joinerType === joinerType.value
+        );
 
-        appState.savedTexts.unshift(savedText);
-        if (appState.savedTexts.length > 50) {
-            appState.savedTexts.pop();
+        if (existing) {
+            existing.timestamp = new Date().toLocaleString('ar-SA');
+            existing.updatedAt = now;
+            appState.savedTexts = [existing, ...appState.savedTexts.filter(item => item.id !== existing.id)];
+        } else {
+            appState.savedTexts.unshift({
+                id: now,
+                original,
+                processed,
+                joinerType: joinerType.value,
+                timestamp: new Date().toLocaleString('ar-SA'),
+                createdAt: now,
+                updatedAt: now
+            });
         }
 
-        localStorage.setItem('wordjoiner_saved_texts', JSON.stringify(appState.savedTexts));
+        appState.savedTexts = appState.savedTexts.slice(0, MAX_SAVED_TEXTS);
+        const persisted = persistSavedTexts();
         updateSavedTextsList();
-        showToast('تم حفظ النص بنجاح', 'success');
+        if (!silent && persisted) showToast('تم حفظ النص في السجل المحلي', 'success');
+        return true;
     }
 
     function loadSavedTexts() {
         const saved = localStorage.getItem('wordjoiner_saved_texts');
-        if (saved) {
-            appState.savedTexts = JSON.parse(saved);
+        if (!saved) {
             updateSavedTextsList();
+            return;
         }
+
+        try {
+            const parsed = JSON.parse(saved);
+            appState.savedTexts = Array.isArray(parsed)
+                ? parsed.filter(item => item && typeof item.processed === 'string').slice(0, MAX_SAVED_TEXTS)
+                : [];
+        } catch (error) {
+            console.warn('Invalid saved texts data; resetting local history:', error);
+            appState.savedTexts = [];
+            localStorage.removeItem('wordjoiner_saved_texts');
+        }
+        updateSavedTextsList();
+    }
+
+    function escapeHtml(value = '') {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function getSavedPreview(item) {
+        return (item.original || item.processed || '').replace(/\s+/gu, ' ').trim();
     }
 
     function updateSavedTextsList() {
-        if (appState.savedTexts.length === 0) {
+        const query = (savedSearch.value || '').trim().toLocaleLowerCase('ar');
+        const allItems = appState.savedTexts;
+        const items = query
+            ? allItems.filter(item => `${item.original || ''} ${item.processed || ''}`.toLocaleLowerCase('ar').includes(query))
+            : allItems;
+
+        savedCount.textContent = `${allItems.length}`;
+        if (allItems.length === 0) {
             savedTextsList.innerHTML = '<p class="empty-message">لا توجد نصوص محفوظة</p>';
             savedTextsCard.classList.add('hidden');
             return;
         }
 
         savedTextsCard.classList.remove('hidden');
-        savedTextsList.innerHTML = appState.savedTexts.map(item => `
+        if (items.length === 0) {
+            savedTextsList.innerHTML = '<p class="empty-message">لا توجد نتائج مطابقة للبحث</p>';
+            return;
+        }
+
+        savedTextsList.innerHTML = items.map(item => `
             <div class="saved-text-item">
-                <div class="saved-text-preview">${item.processed.substring(0, 50)}...</div>
+                <div class="saved-text-content">
+                    <div class="saved-text-preview" title="${escapeHtml(item.original || item.processed)}">${escapeHtml(getSavedPreview(item))}</div>
+                    <div class="saved-text-meta">${escapeHtml(item.timestamp || '')} · ${escapeHtml(item.joinerType || 'U+2060')}</div>
+                </div>
                 <div class="saved-text-actions">
-                    <button onclick="window.loadSavedText('${item.id}')"><i class="fas fa-download"></i> تحميل</button>
-                    <button onclick="window.deleteSavedText('${item.id}')"><i class="fas fa-trash-alt"></i> حذف</button>
+                    <button title="تحميل النص" onclick="window.loadSavedText('${item.id}')"><i class="fas fa-download"></i> تحميل</button>
+                    <button title="نسخ الناتج" onclick="window.copySavedText('${item.id}')"><i class="fas fa-copy"></i> نسخ</button>
+                    <button title="حذف النص" onclick="window.deleteSavedText('${item.id}')"><i class="fas fa-trash-alt"></i> حذف</button>
                 </div>
             </div>
         `).join('');
@@ -465,7 +544,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function clearAllSavedTexts() {
         if (confirm('هل أنت متأكد من حذف جميع النصوص المحفوظة؟')) {
             appState.savedTexts = [];
-            localStorage.setItem('wordjoiner_saved_texts', JSON.stringify(appState.savedTexts));
+            savedSearch.value = '';
+            persistSavedTexts();
             updateSavedTextsList();
             showToast('تم حذف جميع النصوص المحفوظة', 'success');
         }
@@ -473,45 +553,80 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Global functions for saved texts
     window.loadSavedText = (id) => {
-        const item = appState.savedTexts.find(t => t.id == id);
+        const item = appState.savedTexts.find(t => String(t.id) === String(id));
         if (item) {
-            inputText.value = item.original;
-            outputText.value = item.processed;
-            joinerType.value = item.joinerType;
+            appState.history.previousInput = inputText.value;
+            appState.history.previousOutput = outputText.value;
+            inputText.value = item.original || '';
+            outputText.value = item.processed || '';
+            joinerType.value = item.joinerType || 'U+2060';
+            undoBtn.disabled = false;
             updateStats();
+            detectQuranicText();
+            outputStats.textContent = `الأحرف بعد التحويل: ${outputText.value.length}`;
             showToast('تم تحميل النص المحفوظ', 'success');
         }
     };
 
+    window.copySavedText = async (id) => {
+        const item = appState.savedTexts.find(t => String(t.id) === String(id));
+        if (!item) return;
+
+        try {
+            await navigator.clipboard.writeText(item.processed || '');
+            showToast('تم نسخ النص من السجل المحلي', 'success');
+        } catch (error) {
+            showToast('تعذر النسخ من السجل، افتح النص ثم انسخه يدويًا', 'warning');
+        }
+    };
+
     window.deleteSavedText = (id) => {
-        appState.savedTexts = appState.savedTexts.filter(t => t.id != id);
-        localStorage.setItem('wordjoiner_saved_texts', JSON.stringify(appState.savedTexts));
+        appState.savedTexts = appState.savedTexts.filter(t => String(t.id) !== String(id));
+        persistSavedTexts();
         updateSavedTextsList();
-        showToast('تم حذف النص المحفوظ', 'success');
+        showToast('تم حذف النص من السجل المحلي', 'success');
     };
 
     // ==================== History ====================
     function addToHistory(input, output, type) {
         const historyItem = {
             id: Date.now(),
-            input: input.substring(0, 100),
-            output: output.substring(0, 100),
-            type: type,
+            input,
+            output,
+            type,
             timestamp: new Date().toLocaleString('ar-SA')
         };
 
-        appState.conversions.unshift(historyItem);
-        if (appState.conversions.length > appState.settings.maxHistoryItems) {
-            appState.conversions.pop();
-        }
+        appState.conversions = [
+            historyItem,
+            ...appState.conversions.filter(item => !(item.input === input && item.output === output && item.type === type))
+        ].slice(0, Math.max(10, Number(appState.settings.maxHistoryItems) || 30));
 
-        localStorage.setItem('wordjoiner_history', JSON.stringify(appState.conversions));
+        try {
+            localStorage.setItem('wordjoiner_history', JSON.stringify(appState.conversions));
+        } catch (error) {
+            appState.conversions = appState.conversions.slice(0, 10);
+            try {
+                localStorage.setItem('wordjoiner_history', JSON.stringify(appState.conversions));
+            } catch (retryError) {
+                console.warn('Unable to persist conversion history:', retryError);
+            }
+        }
     }
 
     function loadConversionHistory() {
         const saved = localStorage.getItem('wordjoiner_history');
-        if (saved) {
-            appState.conversions = JSON.parse(saved);
+        if (!saved) return;
+
+        try {
+            const parsed = JSON.parse(saved);
+            appState.conversions = Array.isArray(parsed)
+                ? parsed.filter(item => item && typeof item.output === 'string')
+                : [];
+        } catch (error) {
+            console.warn('Invalid conversion history; resetting local history:', error);
+            appState.conversions = [];
+            localStorage.removeItem('wordjoiner_history');
         }
     }
 
@@ -523,9 +638,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         historyList.innerHTML = appState.conversions.map(item => `
             <div class="history-item">
-                <div class="history-item-text"><strong>النوع:</strong> ${item.type}</div>
-                <div class="history-item-text"><strong>النص:</strong> ${item.input}...</div>
-                <div class="history-item-time">${item.timestamp}</div>
+                <div class="history-item-text"><strong>النوع:</strong> ${escapeHtml(item.type || 'U+2060')}</div>
+                <div class="history-item-text"><strong>النص:</strong> ${escapeHtml((item.input || item.output || '').replace(/\s+/gu, ' ').slice(0, 140))}...</div>
+                <div class="history-item-time">${escapeHtml(item.timestamp || '')}</div>
                 <div class="history-item-actions">
                     <button onclick="window.loadFromHistory('${item.id}')"><i class="fas fa-redo"></i> استعادة</button>
                     <button onclick="window.copyFromHistory('${item.id}')"><i class="fas fa-copy"></i> نسخ</button>
@@ -535,9 +650,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.loadFromHistory = (id) => {
-        const item = appState.conversions.find(h => h.id == id);
+        const item = appState.conversions.find(h => String(h.id) === String(id));
         if (item) {
-            outputText.value = item.output;
+            appState.history.previousInput = inputText.value;
+            appState.history.previousOutput = outputText.value;
+            inputText.value = item.input || '';
+            outputText.value = item.output || '';
+            joinerType.value = item.type || 'U+2060';
+            undoBtn.disabled = false;
+            updateStats();
+            detectQuranicText();
+            outputStats.textContent = `الأحرف بعد التحويل: ${outputText.value.length}`;
             showToast('تم استعادة النص من السجل', 'success');
         }
     };
