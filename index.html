@@ -229,6 +229,13 @@
     <script src="script.js?v=5"></script>
     <script>
         if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!window.__wordJoinerReloaded) {
+                    window.__wordJoinerReloaded = true;
+                    window.location.reload();
+                }
+            });
+
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
                     .then(reg => {

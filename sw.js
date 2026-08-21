@@ -1,5 +1,5 @@
 // Bump this whenever a processing rule or client asset changes.
-const CACHE_NAME = 'wordjoiner-pro-v5';
+const CACHE_NAME = 'wordjoiner-pro-v6';
 const ASSETS = [
   './',
   './index.html',
@@ -48,10 +48,23 @@ self.addEventListener('activate', event => {
 
 // Fetch Assets
 self.addEventListener('fetch', event => {
+  const request = event.request;
+  const isAppCode = new URL(request.url).pathname.endsWith('/index.html') ||
+    new URL(request.url).pathname.endsWith('/script.js') ||
+    new URL(request.url).pathname.endsWith('/arabic-spacing.js') ||
+    new URL(request.url).pathname.endsWith('/sw.js');
+
+  if (request.method !== 'GET') return;
+
   event.respondWith(
-    caches.match(event.request)
+    (isAppCode ? fetch(request, { cache: 'no-store' }) : fetch(request))
       .then(response => {
-        return response || fetch(event.request);
+        if (response && response.ok && isAppCode) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+        }
+        return response;
       })
+      .catch(() => caches.match(request))
   );
 });
