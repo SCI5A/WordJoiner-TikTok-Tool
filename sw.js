@@ -1,6 +1,5 @@
-// Bump this whenever a processing rule changes so installed PWAs receive the fix.
 // Bump this whenever a processing rule or client asset changes.
-const CACHE_NAME = 'wordjoiner-pro-v3';
+const CACHE_NAME = 'wordjoiner-pro-v4';
 const ASSETS = [
   './',
   './index.html',
