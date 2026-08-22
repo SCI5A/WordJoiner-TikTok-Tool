@@ -1,10 +1,14 @@
 # WordJoiner — التقرير النهائي للتدقيق والإصدار
 
-**الحالة:** جاهز للنشر بعد اجتياز التحقق المحلي
+**الحالة:** منشور على GitHub Pages بعد اجتياز التحقق المحلي والعام
 
 **تاريخ الإغلاق:** 22 أغسطس 2026
 
-**الرابط المستهدف:** https://sci5a.github.io/WordJoiner-TikTok-Tool/
+**الرابط المنشور:** https://sci5a.github.io/WordJoiner-TikTok-Tool/
+
+**الإصدار:** `9b91c66` على `main`
+
+**مصدر Pages:** `main:/`، وحالة البناء الأخيرة أثناء الإغلاق `building` مع ظهور الإصدار الجديد في الاستجابة العامة.
 
 ## النتيجة
 
@@ -44,6 +48,7 @@
 | PDF print sheet | ناجح: RTL، آية، لا محارف حماية؛ حوار الحفظ يدوي |
 | Service Worker | ناجح محليًا: active/controlled وcache v13 مكتمل |
 | `git diff --check` | ناجح |
+| Public GitHub Pages smoke test | ناجح | العنوان الجديد، canonical، Service Worker، واختبار إعادة بناء النص ظهرت في النسخة العامة. |
 
 ## ملاحظات ضمان الجودة
 
