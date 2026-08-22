@@ -12,7 +12,7 @@
     <link rel="icon" href="icons/icon-192x192.png" type="image/png">
     <link rel="apple-touch-icon" href="icons/icon-192x192.png">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;500;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -61,7 +61,7 @@
             <!-- Warning for Quranic Text -->
             <div id="quranWarning" class="warning-box hidden">
                 <i class="fas fa-exclamation-triangle"></i>
-                <span>تم اكتشاف نص قد يحتوي على آيات قرآنية. سيتم الحفاظ على التشكيل وعلامات الوقف بدقة.</span>
+                <span id="quranWarningText">تم اكتشاف نص قد يحتوي على آيات قرآنية. سيتم الحفاظ على التشكيل وعلامات الوقف بدقة.</span>
             </div>
 
             <!-- Preview Section -->
@@ -128,6 +128,34 @@
                         <label class="checkbox-label">
                             <input type="checkbox" id="autoRepairSpacing" checked>
                             <span>إصلاح المسافات العربية تلقائيًا</span>
+                        </label>
+                    </div>
+                    <div class="option-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="autoDetectQuran" checked>
+                            <span>التعرف التلقائي على الآيات</span>
+                        </label>
+                    </div>
+                    <div class="quran-style-options">
+                        <div class="quran-style-heading"><i class="fas fa-quran"></i> تنسيق الآيات في التصدير</div>
+                        <label for="quranFontFamily">خط الآيات</label>
+                        <select id="quranFontFamily" class="input-field">
+                            <option value="Amiri">Amiri</option>
+                            <option value="Noto Naskh Arabic">Noto Naskh Arabic</option>
+                            <option value="Arial">Arial</option>
+                        </select>
+                        <div class="quran-style-row">
+                            <label for="quranTextColor">لون الآيات</label>
+                            <input type="color" id="quranTextColor" value="#2E7D32" aria-label="لون الآيات">
+                        </div>
+                        <div class="quran-style-row">
+                            <label for="quranFontSize">حجم الخط</label>
+                            <input type="range" id="quranFontSize" min="16" max="32" value="22" class="slider">
+                            <span id="quranFontSizeValue">22pt</span>
+                        </div>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="quranKeepMarkers" checked>
+                            <span>إبقاء علامات ﴿﴾ حول الآية</span>
                         </label>
                     </div>
                     <div class="option-group">
@@ -256,6 +284,7 @@
     <div id="toast" class="toast hidden">تم النسخ بنجاح!</div>
 
     <script src="arabic-spacing.js?v=5"></script>
+    <script src="quran-segmentation.js?v=1"></script>
     <script src="docx-export.js?v=1"></script>
     <script src="script.js?v=6"></script>
     <script>

@@ -102,20 +102,74 @@
         });
     }
 
-    function makeDocumentXml(text) {
-        const cleanText = String(text || '')
-            .replace(/\u2060/gu, '')
-            .replace(/\r\n?/gu, '\n');
-        const paragraphs = cleanText.split('\n').map(line => {
-            const safeLine = xmlEscape(line || ' ');
-            return `<w:p><w:pPr><w:bidi/><w:jc w:val="right"/></w:pPr><w:r><w:rPr><w:rtl/><w:lang w:val="ar-SA"/><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/></w:rPr><w:t xml:space="preserve">${safeLine}</w:t></w:r></w:p>`;
+    function normalizeSegments(text, options = {}) {
+        const fallback = String(text || '').replace(/\u2060/gu, '');
+        if (!Array.isArray(options.segments) || options.segments.length === 0) {
+            return [{ type: 'text', value: fallback }];
+        }
+        return options.segments
+            .filter(segment => segment && typeof segment.value === 'string')
+            .map(segment => ({
+                type: segment.type === 'ayah' ? 'ayah' : 'text',
+                value: String(segment.value).replace(/\u2060/gu, ''),
+                confidence: Number(segment.confidence) || 0,
+                source: segment.source || ''
+            }));
+    }
+
+    function normalizeHexColor(value, fallback = '2E7D32') {
+        const color = String(value || '').replace('#', '').trim();
+        return /^[0-9a-f]{6}$/iu.test(color) ? color.toUpperCase() : fallback;
+    }
+
+    function makeRunXml(segment, style) {
+        const isAyah = segment.type === 'ayah' && Number(segment.confidence) >= 0.95;
+        const value = segment.type === 'ayah' && style.keepMarkers === false
+            ? segment.value.replace(/[﴿﴾]/gu, '')
+            : segment.value;
+        const font = isAyah ? style.fontFamily : style.baseFontFamily;
+        const size = isAyah ? style.fontSize : style.baseFontSize;
+        const color = isAyah ? `<w:color w:val="${normalizeHexColor(style.color)}"/>` : '';
+        const bold = isAyah && style.bold ? '<w:b/><w:bCs/>' : '';
+        const safeValue = xmlEscape(value || ' ');
+        return `<w:r><w:rPr><w:rtl/><w:lang w:val="ar-SA"/><w:rFonts w:ascii="${xmlEscape(font)}" w:hAnsi="${xmlEscape(font)}" w:cs="${xmlEscape(font)}"/>${color}${bold}<w:sz w:val="${Math.round(size * 2)}"/><w:szCs w:val="${Math.round(size * 2)}"/></w:rPr><w:t xml:space="preserve">${safeValue}</w:t></w:r>`;
+    }
+
+    function splitSegmentsIntoLines(segments) {
+        const lines = [[]];
+        for (const segment of segments) {
+            const parts = String(segment.value || '').replace(/\r\n?/gu, '\n').split('\n');
+            parts.forEach((part, index) => {
+                if (part) lines[lines.length - 1].push({ ...segment, value: part });
+                if (index < parts.length - 1) lines.push([]);
+            });
+        }
+        return lines;
+    }
+
+    function makeDocumentXml(text, options = {}) {
+        const style = {
+            fontFamily: options.quranStyle?.fontFamily || 'Amiri',
+            color: options.quranStyle?.color || '#2E7D32',
+            fontSize: Number(options.quranStyle?.fontSize) || 22,
+            keepMarkers: options.quranStyle?.keepMarkers !== false,
+            bold: options.quranStyle?.bold !== false,
+            baseFontFamily: options.baseFontFamily || 'Arial',
+            baseFontSize: Number(options.baseFontSize) || 14
+        };
+        const segments = normalizeSegments(text, options);
+        const paragraphs = splitSegmentsIntoLines(segments).map(line => {
+            const runs = line.length
+                ? line.map(segment => makeRunXml(segment, style)).join('')
+                : makeRunXml({ type: 'text', value: ' ' }, style);
+            return `<w:p><w:pPr><w:bidi/><w:jc w:val="right"/><w:spacing w:after="160" w:line="360" w:lineRule="auto"/></w:pPr>${runs}</w:p>`;
         }).join('');
 
         return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${paragraphs}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134"/><w:bidi/></w:sectPr></w:body></w:document>`;
     }
 
-    function createDocx(text) {
+    function createDocx(text, options = {}) {
         const entries = [
             {
                 name: '[Content_Types].xml',
@@ -127,7 +181,7 @@
             },
             {
                 name: 'word/document.xml',
-                data: makeDocumentXml(text)
+                data: makeDocumentXml(text, options)
             },
             {
                 name: 'word/_rels/document.xml.rels',
@@ -141,9 +195,9 @@
         return createZip(entries);
     }
 
-    function downloadDocx(text, filename = `WordJoiner-${new Date().toISOString().slice(0, 10)}.docx`) {
+    function downloadDocx(text, filename = `WordJoiner-${new Date().toISOString().slice(0, 10)}.docx`, options = {}) {
         if (!String(text || '').trim()) return false;
-        const blob = createDocx(text);
+        const blob = createDocx(text, options);
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;

@@ -1,11 +1,12 @@
 // Bump this whenever a processing rule or client asset changes.
-const CACHE_NAME = 'wordjoiner-pro-v10';
+const CACHE_NAME = 'wordjoiner-pro-v12';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './script.js?v=6',
   './arabic-spacing.js?v=5',
+  './quran-segmentation.js?v=1',
   './docx-export.js?v=1',
   './manifest.json',
   './icons/icon-72x72.png',
@@ -16,7 +17,7 @@ const ASSETS = [
   './icons/icon-192x192.png',
   './icons/icon-384x384.png',
   './icons/icon-512x512.png',
-  'https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap',
+  'https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;500;700&family=Tajawal:wght@400;500;700&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css'
 ];
 
@@ -55,6 +56,7 @@ self.addEventListener('fetch', event => {
     pathname.endsWith('/index.html') ||
     pathname.endsWith('/script.js') ||
     pathname.endsWith('/arabic-spacing.js') ||
+    pathname.endsWith('/quran-segmentation.js') ||
     pathname.endsWith('/docx-export.js') ||
     pathname.endsWith('/sw.js');
 

@@ -16,6 +16,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const inputStats = document.getElementById('inputStats');
     const outputStats = document.getElementById('outputStats');
     const quranWarning = document.getElementById('quranWarning');
+    const quranWarningText = document.getElementById('quranWarningText');
+    const autoDetectQuran = document.getElementById('autoDetectQuran');
+    const quranFontFamily = document.getElementById('quranFontFamily');
+    const quranTextColor = document.getElementById('quranTextColor');
+    const quranFontSize = document.getElementById('quranFontSize');
+    const quranFontSizeValue = document.getElementById('quranFontSizeValue');
+    const quranKeepMarkers = document.getElementById('quranKeepMarkers');
+    const quranStyleOptions = document.querySelector('.quran-style-options');
     const toast = document.getElementById('toast');
     
     // Advanced Options
@@ -71,6 +79,11 @@ document.addEventListener('DOMContentLoaded', () => {
             showNotifications: true,
             enableHistory: true,
             autoRepairSpacing: true,
+            autoDetectQuran: true,
+            quranFontFamily: 'Amiri',
+            quranTextColor: '#2E7D32',
+            quranFontSize: 22,
+            quranKeepMarkers: true,
             maxHistoryItems: 20
         }
     };
@@ -195,6 +208,31 @@ document.addEventListener('DOMContentLoaded', () => {
             saveSettings();
         });
 
+        autoDetectQuran.addEventListener('change', (e) => {
+            appState.settings.autoDetectQuran = e.target.checked;
+            updateQuranStyleAvailability();
+            detectQuranicText();
+            saveSettings();
+        });
+
+        quranFontFamily.addEventListener('change', (e) => {
+            appState.settings.quranFontFamily = e.target.value;
+            saveSettings();
+        });
+        quranTextColor.addEventListener('input', (e) => {
+            appState.settings.quranTextColor = e.target.value;
+            saveSettings();
+        });
+        quranFontSize.addEventListener('input', (e) => {
+            appState.settings.quranFontSize = Number(e.target.value);
+            updateQuranFontSizeValue();
+            saveSettings();
+        });
+        quranKeepMarkers.addEventListener('change', (e) => {
+            appState.settings.quranKeepMarkers = e.target.checked;
+            saveSettings();
+        });
+
         clearAllData.addEventListener('click', clearAllAppData);
 
         // Modal Background Click
@@ -296,13 +334,78 @@ document.addEventListener('DOMContentLoaded', () => {
         inputStats.textContent = `الكلمات: ${words} | الأحرف: ${chars} | الحجم: ${size} B`;
     }
 
-    function detectQuranicText() {
-        const quranicMarkers = /[\u0610-\u061A\u064B-\u065F\u06D6-\u06DC\u06DF-\u06E8\u06EA-\u06ED]/;
-        if (quranicMarkers.test(inputText.value)) {
-            quranWarning.classList.remove('hidden');
-        } else {
-            quranWarning.classList.add('hidden');
+    function getQuranSegments(text) {
+        if (!appState.settings.autoDetectQuran || typeof window.segmentArabicText !== 'function') {
+            return [{ type: 'text', value: String(text || '').replace(/\u2060/gu, '') }];
         }
+        return window.segmentArabicText(text, { enableContext: true });
+    }
+
+    function getQuranStyleOptions() {
+        return {
+            fontFamily: quranFontFamily.value || appState.settings.quranFontFamily || 'Amiri',
+            color: quranTextColor.value || appState.settings.quranTextColor || '#2E7D32',
+            fontSize: Number(quranFontSize.value || appState.settings.quranFontSize || 22),
+            keepMarkers: quranKeepMarkers.checked
+        };
+    }
+
+    function renderSegments(container, segments, options = {}) {
+        container.replaceChildren();
+        const style = { ...getQuranStyleOptions(), ...options };
+        for (const segment of segments) {
+            const node = document.createElement('span');
+            const value = segment.type === 'ayah' && style.keepMarkers === false
+                ? segment.value.replace(/[﴿﴾]/gu, '')
+                : segment.value;
+            node.textContent = value;
+            if (segment.type === 'ayah') {
+                const isConfirmed = Number(segment.confidence) >= 0.95;
+                node.className = isConfirmed ? 'ayah-segment' : 'ayah-segment ayah-uncertain';
+                node.dataset.confidence = String(segment.confidence ?? '');
+                node.dataset.source = segment.source || '';
+                node.title = isConfirmed ? 'آية مؤكدة بعلامات قرآنية' : 'مقطع مرشح للمراجعة وليس آية مؤكدة';
+                if (isConfirmed) {
+                    node.style.fontFamily = `'${style.fontFamily}', 'Amiri', 'Noto Naskh Arabic', Arial, sans-serif`;
+                    node.style.color = style.color;
+                    node.style.fontSize = `${style.fontSize}pt`;
+                }
+            }
+            container.appendChild(node);
+        }
+    }
+
+    function updateQuranFontSizeValue() {
+        quranFontSizeValue.textContent = `${quranFontSize.value}pt`;
+    }
+
+    function updateQuranStyleAvailability() {
+        const disabled = !autoDetectQuran.checked;
+        quranStyleOptions.classList.toggle('is-disabled', disabled);
+        [quranFontFamily, quranTextColor, quranFontSize, quranKeepMarkers].forEach(control => {
+            control.disabled = disabled;
+        });
+    }
+
+    function detectQuranicText() {
+        const segments = getQuranSegments(inputText.value);
+        const ayahs = segments.filter(segment => segment.type === 'ayah');
+        const legacyQuranicMarks = /[\u0610-\u061A\u064B-\u065F\u06D6-\u06DC\u06DF-\u06E8\u06EA-\u06ED]/u.test(inputText.value);
+        if (ayahs.length === 0 && !legacyQuranicMarks) {
+            quranWarning.classList.add('hidden');
+            return;
+        }
+
+        quranWarning.classList.remove('hidden');
+        if (ayahs.length === 0) {
+            quranWarningText.textContent = 'تم العثور على علامات تشكيل أو وقف قد تكون جزءًا من نص قرآني؛ راجع النص قبل التصدير.';
+            return;
+        }
+
+        const confirmed = ayahs.filter(segment => segment.confirmed).length;
+        quranWarningText.textContent = confirmed === ayahs.length
+            ? `تم اكتشاف ${ayahs.length} مقطع قرآني مؤكد بعلامات ﴿﴾ وسيُنسّق تلقائيًا عند التصدير.`
+            : `تم رصد ${ayahs.length} مقطع قد يكون آية؛ المقطع المؤكد فقط سيُنسّق تلقائيًا، ويمكن مراجعة النص قبل التصدير.`;
     }
 
     // ==================== Actions ====================
@@ -394,7 +497,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="pdf-meta">النص المعالج · ${new Date().toLocaleString('ar-SA')}</div>
             <div class="pdf-content"></div>
         `;
-        printSheet.querySelector('.pdf-content').textContent = outputText.value.replace(/\u2060/gu, '');
+        renderSegments(printSheet.querySelector('.pdf-content'), getQuranSegments(outputText.value));
         document.body.appendChild(printSheet);
 
         const cleanup = () => {
@@ -419,8 +522,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const cleanText = String(text).replace(/\u2060/gu, '');
         const filename = `WordJoiner-${new Date().toISOString().slice(0, 10)}.docx`;
+        const segments = getQuranSegments(cleanText);
         const downloaded = typeof window.downloadDocx === 'function'
-            ? window.downloadDocx(cleanText, filename)
+            ? window.downloadDocx(cleanText, filename, { segments, quranStyle: getQuranStyleOptions() })
             : false;
 
         if (downloaded) {
@@ -477,7 +581,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         previewOriginal.textContent = inputText.value || 'لا يوجد نص أصلي';
-        previewProcessed.textContent = outputText.value;
+        renderSegments(previewProcessed, getQuranSegments(outputText.value));
         previewCard.classList.remove('hidden');
     }
 
@@ -789,6 +893,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         autoSaveSettings.checked = appState.settings.autoSave;
         autoRepairSpacing.checked = appState.settings.autoRepairSpacing !== false;
+        autoDetectQuran.checked = appState.settings.autoDetectQuran !== false;
+        quranFontFamily.value = appState.settings.quranFontFamily || 'Amiri';
+        quranTextColor.value = appState.settings.quranTextColor || '#2E7D32';
+        quranFontSize.value = appState.settings.quranFontSize || 22;
+        quranKeepMarkers.checked = appState.settings.quranKeepMarkers !== false;
+        updateQuranFontSizeValue();
+        updateQuranStyleAvailability();
         showNotifications.checked = appState.settings.showNotifications;
         enableHistory.checked = appState.settings.enableHistory;
         maxHistoryItems.value = appState.settings.maxHistoryItems;
