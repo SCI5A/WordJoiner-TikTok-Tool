@@ -43,7 +43,7 @@
 *   **اكتشاف الآيات وتنسيقها:** محرك segmentation يعيد مقاطع `text` و`ayah` مع الثقة ومصدر الاكتشاف؛ العلامات `﴿﴾` تمنح ثقة مؤكدة، والكشف السياقي يبقى للمراجعة.
 *   **تصدير قرآني احترافي:** تنسيق الآيات بخط Amiri أو Noto Naskh Arabic، ولون وحجم مخصصين في DOCX وPDF، مع اتجاه RTL وإبقاء علامات الآية اختياريًا.
 *   **إحصائيات النص:** عرض عدد الكلمات، الأحرف، والأحرف قبل وبعد التحويل، بالإضافة إلى حجم النص.
-*   **تطبيق ويب تقدمي (PWA) احترافي:** قابل للتثبيت على الشاشة الرئيسية ويعمل بكامل طاقته دون اتصال بالإنترنت.
+*   **تطبيق ويب تقدمي (PWA) احترافي:** قابل للتثبيت على الشاشة الرئيسية، وتعمل المعالجة الأساسية دون اتصال بعد تخزين الأصول المحلية؛ الخطوط الخارجية اختيارية وقد يعود العرض إلى خطوط النظام.
 
 ## كيفية الاستخدام
 
@@ -89,9 +89,26 @@
 لتشغيل الاختبارات من مجلد المشروع:
 
 ```bash
+npm ci
+npm test
+npm run security
+```
+
+أو لتشغيل اختبارات محرك الآيات مباشرة:
+
+```bash
+node arabic-spacing.test.js
 node quran-segmentation.test.js
 node quran-segmentation.long.test.js
 ```
+
+يتحقق `npm run build` من الأصول الثابتة ووسوم RTL وSEO ونسخة Service Worker، بينما يشغّل workflow في `.github/workflows/validate.yml` هذه الفحوصات تلقائيًا عند الدفع وطلبات الدمج. لا يوجد TypeScript في هذا المشروع؛ لذلك يوضح `npm run typecheck` أن الفحص غير منطبق بدل إنشاء toolchain غير ضروري.
+
+## الخصوصية والتصدير
+
+تُعالج النصوص وتُحفظ في `localStorage` داخل متصفح المستخدم، ولا يرسل التطبيق النص إلى backend. زر Word ينشئ DOCX محليًا، وزر PDF يفتح ورقة طباعة RTL ليحفظها المستخدم من حوار المتصفح. اكتشاف الآيات المؤكدة يعتمد على علامات `﴿﴾`، أما الاكتشاف السياقي فهو اقتراح يحتاج مراجعة ولا يستبدل التحقق من المصدر.
+
+للاطلاع على أدلة التدقيق والقيود وخارطة الطريق، راجع [AUDIT_REPORT.md](AUDIT_REPORT.md) و[FINAL_AUDIT_REPORT.md](FINAL_AUDIT_REPORT.md).
 
 ## التطوير
 
@@ -172,7 +189,7 @@ WordJoiner-TikTok-Tool/
 *   **Integrated Text Tools:** Input box, output box, buttons for convert, copy, share, clear, paste, and undo previous text.
 *   **Religious Text Support:** An intelligent mechanism to preserve Quranic verses, diacritics, and pause marks without alteration, with a warning to the user when processing Quranic text.
 *   **Text Statistics:** Displays word count, character count, and character count before and after conversion, as well as text size.
-*   **Professional Progressive Web App (PWA):** Installable on the home screen and fully functional offline.
+*   **Professional Progressive Web App (PWA):** Installable on the home screen; core processing works offline after local assets are cached, while external fonts are optional and may fall back to system fonts.
 
 ## How to Use
 
@@ -210,6 +227,8 @@ You can install WordJoiner PRO as an application on your device (smartphone or d
     3.  Click on it and follow the instructions to install the application.
 
 ## Development
+
+Run the reproducible validation from the project root with `npm ci`, `npm test`, and `npm run security`. The project intentionally remains dependency-free at runtime. `npm run typecheck` reports that TypeScript is not applicable because the application uses vanilla JavaScript.
 
 This project is built using:
 

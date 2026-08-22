@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://sci5a.github.io/WordJoiner-TikTok-Tool/sitemap.xml

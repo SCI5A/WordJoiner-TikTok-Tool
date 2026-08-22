@@ -1,6 +1,6 @@
 // Bump this whenever a processing rule or client asset changes.
-const CACHE_NAME = 'wordjoiner-pro-v12';
-const ASSETS = [
+const CACHE_NAME = 'wordjoiner-pro-v13';
+const CORE_ASSETS = [
   './',
   './index.html',
   './style.css',
@@ -9,6 +9,8 @@ const ASSETS = [
   './quran-segmentation.js?v=1',
   './docx-export.js?v=1',
   './manifest.json',
+  './robots.txt',
+  './sitemap.xml',
   './icons/icon-72x72.png',
   './icons/icon-96x96.png',
   './icons/icon-128x128.png',
@@ -16,7 +18,10 @@ const ASSETS = [
   './icons/icon-152x152.png',
   './icons/icon-192x192.png',
   './icons/icon-384x384.png',
-  './icons/icon-512x512.png',
+  './icons/icon-512x512.png'
+];
+
+const OPTIONAL_ASSETS = [
   'https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;500;700&family=Tajawal:wght@400;500;700&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css'
 ];
@@ -27,10 +32,12 @@ self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Caching assets');
-        return cache.addAll(ASSETS);
-      })
+      .then(cache => cache.addAll(CORE_ASSETS))
+      .then(() => caches.open(CACHE_NAME).then(cache => Promise.all(
+        OPTIONAL_ASSETS.map(asset => cache.add(asset).catch(error => {
+          console.warn('Optional asset was not cached:', asset, error);
+        }))
+      )))
   );
 });
 

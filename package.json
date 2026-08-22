@@ -1,0 +1,19 @@
+{
+  "name": "wordjoiner-pro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Privacy-first Arabic text protection PWA",
+  "scripts": {
+    "test": "npm run validate && npm run test:unit",
+    "test:unit": "node arabic-spacing.test.js && node quran-segmentation.test.js && node quran-segmentation.long.test.js",
+    "validate": "node scripts/validate-static.js && npm run syntax",
+    "syntax": "for file in *.js; do node --check \"$file\"; done",
+    "build": "npm run validate",
+    "lint": "npm run syntax",
+    "typecheck": "echo 'Not applicable: vanilla JavaScript project without TypeScript.'",
+    "security": "npm audit --audit-level=high --omit=dev"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -140,7 +140,10 @@ function repairArabicSpacing(text, options = {}) {
     ...(Array.isArray(options.vocabulary) ? options.vocabulary : [])
   ]);
 
-  let result = text.normalize("NFC");
+  // Preserve the user's original grapheme/mark order. NFC is used only for
+  // dictionary comparison; applying it to the full output can reorder Arabic
+  // combining marks such as shadda and fatha.
+  let result = text;
 
   if (options.removeZeroWidth !== false) {
     // محارف تركتها بعض أدوات حماية النص القديمة.

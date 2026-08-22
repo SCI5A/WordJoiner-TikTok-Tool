@@ -738,10 +738,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="saved-text-meta">${escapeHtml(item.timestamp || '')} · ${escapeHtml(item.joinerType || 'U+2060')}</div>
                 </div>
                 <div class="saved-text-actions">
-                    <button title="تحميل النص" onclick="window.loadSavedText('${item.id}')"><i class="fas fa-download"></i> تحميل</button>
-                    <button title="نسخ الناتج" onclick="window.copySavedText('${item.id}')"><i class="fas fa-copy"></i> نسخ</button>
-                    <button title="تصدير Word" onclick="window.exportSavedDocx('${item.id}')"><i class="fas fa-file-word"></i> Word</button>
-                    <button title="حذف النص" onclick="window.deleteSavedText('${item.id}')"><i class="fas fa-trash-alt"></i> حذف</button>
+                    <button title="تحميل النص" aria-label="تحميل النص المحفوظ" onclick="window.loadSavedText('${item.id}')"><i class="fas fa-download"></i> تحميل</button>
+                    <button title="نسخ الناتج" aria-label="نسخ النص المحفوظ" onclick="window.copySavedText('${item.id}')"><i class="fas fa-copy"></i> نسخ</button>
+                    <button title="تصدير Word" aria-label="تصدير النص المحفوظ إلى Word" onclick="window.exportSavedDocx('${item.id}')"><i class="fas fa-file-word"></i> Word</button>
+                    <button title="حذف النص" aria-label="حذف النص المحفوظ" onclick="window.deleteSavedText('${item.id}')"><i class="fas fa-trash-alt"></i> حذف</button>
                 </div>
             </div>
         `).join('');
