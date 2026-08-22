@@ -37,3 +37,7 @@ The repository now has a dependency-free `package.json` and `package-lock.json` 
 The default state was dark mode and persisted as `theme=dark`. Clicking the theme control switched to light mode and persisted `theme=light`; clicking again restored dark mode. The control's accessible label changed from “التبديل إلى الوضع الداكن” to “التبديل إلى الوضع الفاتح” appropriately.
 
 After the accessibility update, conversion auto-saved one entry locally and added two history records in the current session. Searching for `عنوان عربي` reduced the visible list to one matching entry. Its four action buttons exposed explicit accessible names: تحميل النص المحفوظ، نسخ النص المحفوظ، تصدير النص المحفوظ إلى Word، وحذف النص المحفوظ.
+
+## Public deployment verification
+
+GitHub Pages initially served the previous HTML while its legacy build was pending. The Pages API then reported `status: built`, and the public response changed to the new Arabic title. A cache-busting public smoke test confirmed the new title, canonical URL, active Service Worker control, one confirmed ayah warning, seven boundary-protection characters, and exact reconstruction of the 68-character Arabic/English/emoji source after removing supported protection characters. The page intentionally has no `meta[name="robots"]`; crawler directives are correctly provided by the root `robots.txt` file.
