@@ -79,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showNotifications: true,
             enableHistory: true,
             autoRepairSpacing: true,
+            smartSpacing: true,
             autoDetectQuran: true,
             quranFontFamily: 'Amiri',
             quranTextColor: '#2E7D32',
@@ -89,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ==================== Initialization ====================
+    const MAX_SAVED_TEXTS = 100;
     initializeApp();
 
     function initializeApp() {
@@ -205,6 +207,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         autoRepairSpacing.addEventListener('change', (e) => {
             appState.settings.autoRepairSpacing = e.target.checked;
+            saveSettings();
+        });
+
+        smartSpacing.addEventListener('change', (e) => {
+            appState.settings.smartSpacing = e.target.checked;
             saveSettings();
         });
 
@@ -388,9 +395,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function detectQuranicText() {
-        const segments = getQuranSegments(inputText.value);
+        const analysisText = repairIncomingText(inputText.value);
+        const segments = getQuranSegments(analysisText);
         const ayahs = segments.filter(segment => segment.type === 'ayah');
-        const legacyQuranicMarks = /[\u0610-\u061A\u064B-\u065F\u06D6-\u06DC\u06DF-\u06E8\u06EA-\u06ED]/u.test(inputText.value);
+        const legacyQuranicMarks = /[\u0610-\u061A\u064B-\u065F\u06D6-\u06DC\u06DF-\u06E8\u06EA-\u06ED]/u.test(analysisText);
         if (ayahs.length === 0 && !legacyQuranicMarks) {
             quranWarning.classList.add('hidden');
             return;
@@ -418,11 +426,40 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('تم مسح النص', 'success');
     }
 
+    function getFormatterOptions() {
+        const smart = smartSpacing.checked;
+        return {
+            removeInvisibleControls: true,
+            normalizeWhitespace: true,
+            collapseWhitespace: smart,
+            fixPunctuationSpacing: smart,
+            separateScriptBoundaries: smart,
+            joinSpacedArabicLetters: smart,
+            repairGluedArabicWords: smart,
+            protectQuranMarkers: true
+        };
+    }
+
     function repairIncomingText(text) {
-        if (!autoRepairSpacing.checked || typeof window.repairArabicSpacing !== 'function') {
-            return text;
+        if (!autoRepairSpacing.checked) return text;
+
+        // Smart formatting is deliberately a separate layer from the legacy
+        // spacing helper and runs before Quran segmentation and protection.
+        if (typeof window.formatArabicText === 'function') {
+            return window.formatArabicText(text, getFormatterOptions());
         }
-        return window.repairArabicSpacing(text, { removeZeroWidth: true });
+
+        // Backward-compatible fallback for cached/older deployments.
+        return typeof window.repairArabicSpacing === 'function'
+            ? window.repairArabicSpacing(text, { removeZeroWidth: true })
+            : text;
+    }
+
+    function formatExportText(text) {
+        const unprotected = String(text || '').replace(/\u2060/gu, '');
+        return autoRepairSpacing.checked && typeof window.formatArabicText === 'function'
+            ? window.formatArabicText(unprotected, getFormatterOptions())
+            : unprotected;
     }
 
     function insertPastedText(text) {
@@ -497,7 +534,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="pdf-meta">النص المعالج · ${new Date().toLocaleString('ar-SA')}</div>
             <div class="pdf-content"></div>
         `;
-        renderSegments(printSheet.querySelector('.pdf-content'), getQuranSegments(outputText.value));
+        const exportText = formatExportText(outputText.value);
+        renderSegments(printSheet.querySelector('.pdf-content'), getQuranSegments(exportText));
         document.body.appendChild(printSheet);
 
         const cleanup = () => {
@@ -520,7 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return false;
         }
 
-        const cleanText = String(text).replace(/\u2060/gu, '');
+        const cleanText = formatExportText(text);
         const filename = `WordJoiner-${new Date().toISOString().slice(0, 10)}.docx`;
         const segments = getQuranSegments(cleanText);
         const downloaded = typeof window.downloadDocx === 'function'
@@ -590,8 +628,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==================== Save Functionality ====================
-    const MAX_SAVED_TEXTS = 100;
-
     function persistSavedTexts() {
         try {
             localStorage.setItem('wordjoiner_saved_texts', JSON.stringify(appState.savedTexts));
@@ -893,6 +929,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         autoSaveSettings.checked = appState.settings.autoSave;
         autoRepairSpacing.checked = appState.settings.autoRepairSpacing !== false;
+        smartSpacing.checked = appState.settings.smartSpacing !== false;
         autoDetectQuran.checked = appState.settings.autoDetectQuran !== false;
         quranFontFamily.value = appState.settings.quranFontFamily || 'Amiri';
         quranTextColor.value = appState.settings.quranTextColor || '#2E7D32';

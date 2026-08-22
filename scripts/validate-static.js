@@ -11,6 +11,7 @@ const requiredFiles = [
   'style.css',
   'script.js',
   'arabic-spacing.js',
+  'arabic-text-formatter.js',
   'quran-segmentation.js',
   'docx-export.js',
   'sw.js',
@@ -52,9 +53,9 @@ if (manifest.display !== 'standalone' || !manifest.start_url || !Array.isArray(m
   process.exit(1);
 }
 
-if (!serviceWorker.includes("wordjoiner-pro-v13") || !serviceWorker.includes("'./robots.txt'") || !serviceWorker.includes("'./sitemap.xml'")) {
+if (!serviceWorker.includes("wordjoiner-pro-v15") || !serviceWorker.includes("'./arabic-text-formatter.js?v=2'") || !serviceWorker.includes("'./robots.txt'") || !serviceWorker.includes("'./sitemap.xml'")) {
   console.error('Service Worker cache version or SEO assets are not up to date.');
   process.exit(1);
 }
 
-console.log(`Static validation passed: ${requiredFiles.length} required files, RTL metadata, export controls, and SW v13.`);
+console.log(`Static validation passed: ${requiredFiles.length} required files, RTL metadata, formatter v2, export controls, and SW v15.`);
