@@ -15,3 +15,7 @@ A TDZ bug found during the clean browser reload was also fixed: `MAX_SAVED_TEXTS
 ## Smart formatting toggle
 
 The final browser session showed the UI checkbox `التنسيق العربي الذكي (محافظ)` enabled by default. With it disabled, `ق ا ل ا ل ل ه ت ع ا ل ى:` remained unchanged before protection. With it enabled, the same input became `قال الله تعالى:` before protection. The enabled state persisted as `smartSpacing: true` in `wordjoiner_settings`, and the saved-text count remained intact across reloads.
+
+## Public GitHub Pages smoke test
+
+After Pages changed to `built`, the public site served `arabic-text-formatter.js?v=2` with the newline-tokenization fix and `sw.js` with cache `wordjoiner-pro-v15`. The page was controlled by an active Service Worker using `wordjoiner-pro-v15`. A public conversion of `ق ا ل ا ل ل ه ت ع ا ل ى:\n﴿مُشَكَّلَةٌ وَقْفٌ﴾` produced `قال الله تعالى:\n﴿مُشَكَّلَةٌ وَقْفٌ﴾` before protection, then inserted U+2060 at word boundaries; reconstruction after removing protection characters matched the formatted input.

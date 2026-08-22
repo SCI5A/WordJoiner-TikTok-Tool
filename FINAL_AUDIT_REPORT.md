@@ -6,9 +6,9 @@
 
 **الرابط المنشور:** https://sci5a.github.io/WordJoiner-TikTok-Tool/
 
-**الإصدار:** `9b91c66` على `main`
+**الإصدار:** `1683d82` على `main`
 
-**مصدر Pages:** `main:/`، وحالة البناء الأخيرة أثناء الإغلاق `building` مع ظهور الإصدار الجديد في الاستجابة العامة.
+**مصدر Pages:** `main:/`، وحالة البناء الأخيرة أثناء الإغلاق `built`، مع انتشار formatter v2 وCache v15 في الاستجابة العامة.
 
 ## النتيجة
 
@@ -28,7 +28,7 @@
 | PWA | فصل `CORE_ASSETS` عن `OPTIONAL_ASSETS` وإضافة formatter إلى code paths وتحديث cache إلى v15. | لا يفشل تثبيت Service Worker بسبب CDN اختياري، وتصل تحديثات formatter للمستخدم. |
 | SEO | إضافة canonical وOpen Graph وTwitter metadata و`robots.txt` و`sitemap.xml`. | تحسين وصف الصفحة واكتشافها دون ادعاء ضمان الفهرسة. |
 | الوصول | إعادة تمكين zoom على الهاتف وإضافة aria-label للأزرار الأيقونية والديناميكية. | تحسين التكبير وقارئات الشاشة مع الحفاظ على الشكل. |
-| التوثيق | تحديث `AUDIT_REPORT.md` وحفظ نتائج المتصفح في `audit-browser-findings.md`. | سجل قابل للمراجعة مع القيود والأدلة. |
+| التوثيق | تحديث `AUDIT_REPORT.md` و`FINAL_AUDIT_REPORT.md` وحفظ نتائج المتصفح في `audit-browser-findings.md` و`formatter-browser-findings.md`. | سجل قابل للمراجعة مع القيود والأدلة. |
 
 ## بوابة الإصدار
 
@@ -51,7 +51,7 @@
 | PDF print sheet | ناجح: RTL، آية، لا محارف حماية؛ حوار الحفظ يدوي |
 | Service Worker | ناجح محليًا: active/controlled وcache v15 مكتمل مع formatter v2 |
 | `git diff --check` | ناجح |
-| Public GitHub Pages smoke test | ناجح | العنوان الجديد، canonical، Service Worker، واختبار إعادة بناء النص ظهرت في النسخة العامة. |
+| Public GitHub Pages smoke test | ناجح | commit `1683d82`، formatter v2، Cache v15، وإعادة بناء النص ظهرت في النسخة العامة بعد حالة Pages `built`. |
 
 ## ملاحظات ضمان الجودة
 
