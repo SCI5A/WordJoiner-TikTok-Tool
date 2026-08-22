@@ -4,8 +4,8 @@
   "description": "أداة احترافية لحماية النصوص العربية من الدمج في تطبيقات التواصل الاجتماعي",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f5f7fa",
-  "theme_color": "#6200ee",
+  "background_color": "#080b16",
+  "theme_color": "#0b1020",
   "orientation": "portrait",
   "icons": [
     {

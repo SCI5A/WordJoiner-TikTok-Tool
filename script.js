@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pasteBtn = document.getElementById('pasteBtn');
     const copyBtn = document.getElementById('copyBtn');
     const shareBtn = document.getElementById('shareBtn');
+    const exportPdfBtn = document.getElementById('exportPdfBtn');
     const undoBtn = document.getElementById('undoBtn');
     const themeToggle = document.getElementById('themeToggle');
     const inputStats = document.getElementById('inputStats');
@@ -83,18 +84,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ==================== Theme Management ====================
     function setupTheme() {
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        document.body.setAttribute('data-theme', savedTheme);
-        updateThemeIcon(savedTheme);
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        applyTheme(savedTheme);
     }
 
     themeToggle.addEventListener('click', () => {
-        const currentTheme = document.body.getAttribute('data-theme');
-        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        document.body.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-        updateThemeIcon(newTheme);
+        const currentTheme = document.body.getAttribute('data-theme') || 'dark';
+        applyTheme(currentTheme === 'light' ? 'dark' : 'light');
     });
+
+    function applyTheme(theme) {
+        const nextTheme = theme === 'light' ? 'light' : 'dark';
+        document.body.setAttribute('data-theme', nextTheme);
+        document.body.classList.toggle('dark-mode', nextTheme === 'dark');
+        document.body.classList.toggle('light-mode', nextTheme === 'light');
+        localStorage.setItem('theme', nextTheme);
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', nextTheme === 'dark' ? '#0b1020' : '#f6f7fb');
+        themeToggle.title = nextTheme === 'dark' ? 'التبديل إلى الوضع الفاتح' : 'التبديل إلى الوضع الداكن';
+        themeToggle.setAttribute('aria-label', themeToggle.title);
+        updateThemeIcon(nextTheme);
+    }
 
     function updateThemeIcon(theme) {
         const icon = themeToggle.querySelector('i');
@@ -124,6 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
         pasteBtn.addEventListener('click', pasteFromClipboard);
         copyBtn.addEventListener('click', copyToClipboard);
         shareBtn.addEventListener('click', shareText);
+        exportPdfBtn.addEventListener('click', exportToPdf);
         undoBtn.addEventListener('click', undoAction);
 
         // Advanced Options
@@ -357,6 +367,40 @@ document.addEventListener('DOMContentLoaded', () => {
             document.execCommand('copy');
             showToast('تم النسخ!', 'success');
         });
+    }
+
+    function exportToPdf() {
+        if (!outputText.value) {
+            showToast('لا يوجد نص لتصديره إلى PDF', 'warning');
+            return;
+        }
+
+        // Keep the exported version in the local history before printing.
+        if (appState.settings.autoSave) saveCurrentText({ silent: true });
+
+        const previousTitle = document.title;
+        const printSheet = document.createElement('section');
+        printSheet.id = 'pdfPrintSheet';
+        printSheet.innerHTML = `
+            <div class="pdf-brand">WordJoiner PRO</div>
+            <div class="pdf-meta">النص المعالج · ${new Date().toLocaleString('ar-SA')}</div>
+            <div class="pdf-content"></div>
+        `;
+        printSheet.querySelector('.pdf-content').textContent = outputText.value.replace(/\u2060/gu, '');
+        document.body.appendChild(printSheet);
+
+        const cleanup = () => {
+            document.body.classList.remove('pdf-export');
+            printSheet.remove();
+            document.title = previousTitle;
+        };
+
+        document.title = `WordJoiner-${new Date().toISOString().slice(0, 10)}`;
+        document.body.classList.add('pdf-export');
+        window.addEventListener('afterprint', cleanup, { once: true });
+        window.print();
+        // Some mobile browsers do not emit afterprint consistently.
+        window.setTimeout(cleanup, 1500);
     }
 
     async function shareText() {

@@ -1,5 +1,5 @@
 // Bump this whenever a processing rule or client asset changes.
-const CACHE_NAME = 'wordjoiner-pro-v8';
+const CACHE_NAME = 'wordjoiner-pro-v9';
 const ASSETS = [
   './',
   './index.html',
