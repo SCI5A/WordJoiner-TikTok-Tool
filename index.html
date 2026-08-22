@@ -156,6 +156,7 @@
                     <button id="previewBtn" class="action-btn preview"><i class="fas fa-eye"></i> معاينة</button>
                     <button id="saveBtn" class="action-btn save"><i class="fas fa-save"></i> حفظ</button>
                     <button id="exportPdfBtn" class="action-btn export"><i class="fas fa-file-pdf"></i> PDF</button>
+                    <button id="exportDocxBtn" class="action-btn docx"><i class="fas fa-file-word"></i> Word</button>
                 </div>
             </section>
 
@@ -170,6 +171,26 @@
                 </div>
                 <div class="saved-tools">
                     <input id="savedSearch" class="saved-search" type="search" placeholder="ابحث في السجل المحلي..." autocomplete="off">
+                    <div class="saved-filters" role="group" aria-label="فلاتر السجل المحلي">
+                        <select id="savedTypeFilter" class="saved-filter" aria-label="فلترة حسب طريقة المعالجة">
+                            <option value="all">كل الطرق</option>
+                            <option value="U+2060">Word Joiner</option>
+                            <option value="U+200D">Zero Width Joiner</option>
+                            <option value="U+200C">Zero Width Non-Joiner</option>
+                            <option value="U+200A">Hair Space</option>
+                            <option value="U+2009">Thin Space</option>
+                        </select>
+                        <select id="savedDateFilter" class="saved-filter" aria-label="فلترة حسب التاريخ">
+                            <option value="all">كل التواريخ</option>
+                            <option value="today">اليوم</option>
+                            <option value="week">آخر 7 أيام</option>
+                            <option value="month">آخر 30 يومًا</option>
+                        </select>
+                        <select id="savedSort" class="saved-filter" aria-label="ترتيب السجل">
+                            <option value="newest">الأحدث أولًا</option>
+                            <option value="oldest">الأقدم أولًا</option>
+                        </select>
+                    </div>
                 </div>
                 <div id="savedTextsList" class="saved-texts-list">
                     <p class="empty-message">لا توجد نصوص محفوظة</p>
@@ -235,7 +256,8 @@
     <div id="toast" class="toast hidden">تم النسخ بنجاح!</div>
 
     <script src="arabic-spacing.js?v=5"></script>
-    <script src="script.js?v=5"></script>
+    <script src="docx-export.js?v=1"></script>
+    <script src="script.js?v=6"></script>
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.addEventListener('controllerchange', () => {

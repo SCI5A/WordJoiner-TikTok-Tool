@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const copyBtn = document.getElementById('copyBtn');
     const shareBtn = document.getElementById('shareBtn');
     const exportPdfBtn = document.getElementById('exportPdfBtn');
+    const exportDocxBtn = document.getElementById('exportDocxBtn');
     const undoBtn = document.getElementById('undoBtn');
     const themeToggle = document.getElementById('themeToggle');
     const inputStats = document.getElementById('inputStats');
@@ -39,6 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedTextsCard = document.querySelector('.saved-texts-card');
     const savedTextsList = document.getElementById('savedTextsList');
     const savedSearch = document.getElementById('savedSearch');
+    const savedTypeFilter = document.getElementById('savedTypeFilter');
+    const savedDateFilter = document.getElementById('savedDateFilter');
+    const savedSort = document.getElementById('savedSort');
     const savedCount = document.getElementById('savedCount');
     const clearSavedBtn = document.getElementById('clearSavedBtn');
     
@@ -134,6 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
         copyBtn.addEventListener('click', copyToClipboard);
         shareBtn.addEventListener('click', shareText);
         exportPdfBtn.addEventListener('click', exportToPdf);
+        exportDocxBtn.addEventListener('click', () => exportDocxFile(outputText.value, inputText.value));
         undoBtn.addEventListener('click', undoAction);
 
         // Advanced Options
@@ -146,7 +151,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Save
         saveBtn.addEventListener('click', saveCurrentText);
-        savedSearch.addEventListener('input', updateSavedTextsList);
+        [savedSearch, savedTypeFilter, savedDateFilter, savedSort].forEach(control => {
+            control.addEventListener('input', updateSavedTextsList);
+            control.addEventListener('change', updateSavedTextsList);
+        });
         clearSavedBtn.addEventListener('click', clearAllSavedTexts);
 
         // History & Settings
@@ -403,6 +411,26 @@ document.addEventListener('DOMContentLoaded', () => {
         window.setTimeout(cleanup, 1500);
     }
 
+    function exportDocxFile(text, originalText = '') {
+        if (!String(text || '').trim()) {
+            showToast('لا يوجد نص لتصديره إلى Word', 'warning');
+            return false;
+        }
+
+        const cleanText = String(text).replace(/\u2060/gu, '');
+        const filename = `WordJoiner-${new Date().toISOString().slice(0, 10)}.docx`;
+        const downloaded = typeof window.downloadDocx === 'function'
+            ? window.downloadDocx(cleanText, filename)
+            : false;
+
+        if (downloaded) {
+            showToast('تم إنشاء ملف Word وبدء تنزيله', 'success');
+        } else {
+            showToast('تعذر إنشاء ملف Word في هذا المتصفح', 'warning');
+        }
+        return downloaded;
+    }
+
     async function shareText() {
         if (!outputText.value) {
             showToast('لا يوجد نص للمشاركة', 'warning');
@@ -550,14 +578,43 @@ document.addEventListener('DOMContentLoaded', () => {
         return (item.original || item.processed || '').replace(/\s+/gu, ' ').trim();
     }
 
+    function getSavedTimestamp(item) {
+        const timestamp = Number(item.updatedAt || item.createdAt || item.id);
+        return Number.isFinite(timestamp) && timestamp > 0 ? timestamp : 0;
+    }
+
+    function matchesSavedDate(item, filter) {
+        if (filter === 'all') return true;
+        const timestamp = getSavedTimestamp(item);
+        if (!timestamp) return true; // Keep legacy records visible until they are re-saved.
+
+        const now = Date.now();
+        if (filter === 'today') {
+            const startOfDay = new Date();
+            startOfDay.setHours(0, 0, 0, 0);
+            return timestamp >= startOfDay.getTime();
+        }
+        if (filter === 'week') return timestamp >= now - (7 * 24 * 60 * 60 * 1000);
+        if (filter === 'month') return timestamp >= now - (30 * 24 * 60 * 60 * 1000);
+        return true;
+    }
+
     function updateSavedTextsList() {
         const query = (savedSearch.value || '').trim().toLocaleLowerCase('ar');
+        const typeFilter = savedTypeFilter.value || 'all';
+        const dateFilter = savedDateFilter.value || 'all';
+        const sortOrder = savedSort.value || 'newest';
         const allItems = appState.savedTexts;
-        const items = query
-            ? allItems.filter(item => `${item.original || ''} ${item.processed || ''}`.toLocaleLowerCase('ar').includes(query))
-            : allItems;
+        const items = allItems
+            .filter(item => typeFilter === 'all' || (item.joinerType || 'U+2060') === typeFilter)
+            .filter(item => matchesSavedDate(item, dateFilter))
+            .filter(item => !query || `${item.original || ''} ${item.processed || ''}`.toLocaleLowerCase('ar').includes(query))
+            .sort((a, b) => {
+                const difference = getSavedTimestamp(a) - getSavedTimestamp(b);
+                return sortOrder === 'oldest' ? difference : -difference;
+            });
 
-        savedCount.textContent = `${allItems.length}`;
+        savedCount.textContent = items.length === allItems.length ? `${allItems.length}` : `${items.length}/${allItems.length}`;
         if (allItems.length === 0) {
             savedTextsList.innerHTML = '<p class="empty-message">لا توجد نصوص محفوظة</p>';
             savedTextsCard.classList.add('hidden');
@@ -566,7 +623,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         savedTextsCard.classList.remove('hidden');
         if (items.length === 0) {
-            savedTextsList.innerHTML = '<p class="empty-message">لا توجد نتائج مطابقة للبحث</p>';
+            savedTextsList.innerHTML = '<p class="empty-message">لا توجد نتائج مطابقة للفلاتر الحالية</p>';
             return;
         }
 
@@ -579,6 +636,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="saved-text-actions">
                     <button title="تحميل النص" onclick="window.loadSavedText('${item.id}')"><i class="fas fa-download"></i> تحميل</button>
                     <button title="نسخ الناتج" onclick="window.copySavedText('${item.id}')"><i class="fas fa-copy"></i> نسخ</button>
+                    <button title="تصدير Word" onclick="window.exportSavedDocx('${item.id}')"><i class="fas fa-file-word"></i> Word</button>
                     <button title="حذف النص" onclick="window.deleteSavedText('${item.id}')"><i class="fas fa-trash-alt"></i> حذف</button>
                 </div>
             </div>
@@ -622,6 +680,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             showToast('تعذر النسخ من السجل، افتح النص ثم انسخه يدويًا', 'warning');
         }
+    };
+
+    window.exportSavedDocx = (id) => {
+        const item = appState.savedTexts.find(t => String(t.id) === String(id));
+        if (item) exportDocxFile(item.processed || '', item.original || '');
     };
 
     window.deleteSavedText = (id) => {

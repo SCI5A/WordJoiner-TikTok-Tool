@@ -1323,3 +1323,69 @@ select:focus-visible {
         transition-duration: 0.01ms !important;
     }
 }
+
+
+/* Local history filters and DOCX export */
+.saved-tools {
+    display: grid;
+    gap: 10px;
+}
+
+.saved-filters {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.saved-filter {
+    width: 100%;
+    min-height: 40px;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background-color: rgba(2, 6, 23, 0.36);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 0.78rem;
+}
+
+[data-theme="light"] .saved-filter {
+    background-color: rgba(248, 250, 252, 0.92);
+}
+
+.saved-filter:focus {
+    border-color: rgba(139, 92, 246, 0.9);
+    box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.14);
+    outline: none;
+}
+
+.action-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.action-btn.docx {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #fff;
+}
+
+@media (max-width: 700px) {
+    .saved-filters {
+        grid-template-columns: 1fr;
+    }
+
+    .action-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .action-btn.export,
+    .action-btn.docx {
+        grid-column: span 1;
+    }
+}
+
+@media print {
+    body.pdf-export #pdfPrintSheet .pdf-content {
+        direction: rtl;
+        text-align: right;
+    }
+}
