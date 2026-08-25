@@ -2,325 +2,99 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>WordJoiner PRO — حماية النصوص العربية</title>
-    <meta name="description" content="أداة عربية مجانية لحماية النصوص من تفكك الكلمات، مع إصلاح المسافات، اكتشاف الآيات، وتصدير Word وPDF.">
-    <meta name="author" content="WordJoiner PRO">
-    <meta name="application-name" content="WordJoiner PRO">
-    <link rel="canonical" href="https://sci5a.github.io/WordJoiner-TikTok-Tool/">
-    <meta property="og:locale" content="ar_AR">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="WordJoiner PRO — حماية النصوص العربية">
-    <meta property="og:description" content="إصلاح المسافات العربية وحماية النصوص للنسخ الآمن إلى TikTok وتطبيقات التواصل.">
-    <meta property="og:url" content="https://sci5a.github.io/WordJoiner-TikTok-Tool/">
-    <meta property="og:image" content="https://sci5a.github.io/WordJoiner-TikTok-Tool/icons/icon-512x512.png">
-    <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="WordJoiner PRO — حماية النصوص العربية">
-    <meta name="twitter:description" content="أداة عربية لحماية النصوص وإصلاح المسافات وتصدير Word وPDF.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WordJoiner PRO — حماية النص العربي</title>
+    <meta name="description" content="احمِ النص العربي من دمج الكلمات عند النسخ إلى TikTok والتطبيقات الأخرى.">
+    <meta name="theme-color" content="#0b1020">
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0b1020">
-    <meta name="color-scheme" content="dark light">
     <link rel="icon" href="icons/icon-192x192.png" type="image/png">
     <link rel="apple-touch-icon" href="icons/icon-192x192.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;500;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome for icons -->
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body class="dark-mode" data-theme="dark">
-    <div class="app-container">
-        <header>
-            <div class="header-content">
-                <div class="logo-area">
-                    <img src="icons/icon-72x72.png" alt="Logo" class="app-logo">
-                    <div class="title-group">
-                        <span class="header-kicker">استوديو النص العربي</span>
-                        <h1>WordJoiner PRO</h1>
-                        <span class="subtitle">حماية النصوص العربية للنسخ الآمن</span>
-                    </div>
-                </div>
-                <div class="header-buttons">
-                    <button id="historyBtn" class="icon-btn" title="سجل التحويلات" aria-label="فتح سجل التحويلات">
-                        <i class="fas fa-history"></i>
-                    </button>
-                    <button id="settingsBtn" class="icon-btn" title="الإعدادات" aria-label="فتح الإعدادات">
-                        <i class="fas fa-cog"></i>
-                    </button>
-                    <button id="themeToggle" class="icon-btn" title="التبديل إلى الوضع الفاتح" aria-label="التبديل إلى الوضع الفاتح">
-                        <i class="fas fa-sun"></i>
-                    </button>
-                </div>
+<body class="light-mode">
+    <div class="app-shell">
+        <header class="topbar">
+            <a class="brand" href="./" aria-label="الصفحة الرئيسية WordJoiner PRO">
+                <img src="icons/icon-72x72.png" alt="">
+                <span><strong>WordJoiner</strong><small>استوديو النص العربي</small></span>
+            </a>
+            <div class="top-actions" aria-label="إجراءات التطبيق">
+                <button id="historyBtn" class="icon-btn" type="button" title="سجل التحويلات" aria-label="فتح سجل التحويلات"><i class="fas fa-clock-rotate-left"></i></button>
+                <button id="settingsBtn" class="icon-btn" type="button" title="الإعدادات" aria-label="فتح الإعدادات"><i class="fas fa-sliders"></i></button>
+                <button id="themeToggle" class="icon-btn" type="button" title="تبديل الوضع" aria-label="تبديل الوضع الليلي"><i class="fas fa-moon"></i></button>
             </div>
         </header>
 
         <main>
-            <!-- Input Section -->
-            <section class="card input-card">
-                <div class="card-header">
-                    <label for="inputText"><i class="fas fa-pen-nib"></i> النص الأصلي</label>
-                    <div class="header-actions">
-                        <button id="pasteBtn" class="text-btn"><i class="fas fa-paste"></i> لصق</button>
-                        <button id="clearBtn" class="text-btn danger"><i class="fas fa-trash-alt"></i> مسح</button>
-                    </div>
-                </div>
-                <textarea id="inputText" placeholder="اكتب أو ألصق النص هنا..."></textarea>
-                <div class="stats-bar">
-                    <span id="inputStats">الكلمات: 0 | الأحرف: 0 | الحجم: 0 B</span>
-                </div>
+            <section class="hero" aria-labelledby="pageTitle">
+                <div class="eyebrow"><span class="status-dot"></span> يعمل محليًا على جهازك</div>
+                <h1 id="pageTitle">احمِ النص العربي<br><em>وانسخه بثقة.</em></h1>
+                <p>ألصق النص، اضغط حماية، ثم انسخ النتيجة. بدون حساب وبدون إرسال النص إلى خادم.</p>
             </section>
 
-            <!-- Warning for Quranic Text -->
-            <div id="quranWarning" class="warning-box hidden">
-                <i class="fas fa-exclamation-triangle"></i>
-                <span id="quranWarningText">تم اكتشاف نص قد يحتوي على آيات قرآنية. سيتم الحفاظ على التشكيل وعلامات الوقف بدقة.</span>
-            </div>
+            <section class="workflow-card" aria-label="أداة حماية النص">
+                <div class="step-heading"><span class="step-number">01</span><div><h2>النص الأصلي</h2><p>اكتب أو ألصق النص الذي تريد حمايته</p></div></div>
+                <div class="input-wrap">
+                    <textarea id="inputText" aria-label="النص الأصلي" placeholder="اكتب أو ألصق النص العربي هنا..."></textarea>
+                    <div class="input-tools"><span id="inputStats">الكلمات: 0 | الأحرف: 0 | الحجم: 0 B</span><div><button id="pasteBtn" class="subtle-btn" type="button"><i class="fas fa-paste"></i> لصق</button><button id="clearBtn" class="subtle-btn danger" type="button"><i class="fas fa-trash-can"></i> مسح</button></div></div>
+                </div>
 
-            <!-- Preview Section -->
-            <section class="card preview-card hidden">
-                <div class="card-header">
-                    <label><i class="fas fa-eye"></i> معاينة المقارنة</label>
-                    <button id="closePreview" class="text-btn"><i class="fas fa-times"></i> إغلاق</button>
+                <div id="quranWarning" class="warning-box hidden" role="status"><i class="fas fa-circle-info"></i><span id="quranWarningText">قد يحتوي النص على تشكيل أو علامات خاصة. راجع النتيجة قبل النشر.</span></div>
+
+                <div class="method-row">
+                    <div class="method-label"><span class="step-number">02</span><div><h2>طريقة الحماية</h2><p>الوضع التلقائي هو الخيار الموصى به</p></div></div>
+                    <select id="joinerType" aria-label="طريقة المعالجة">
+                        <option value="U+2060">تلقائي — Word Joiner (U+2060)</option>
+                        <option value="U+200D">Zero Width Joiner (U+200D)</option>
+                        <option value="U+200C">Zero Width Non-Joiner (U+200C)</option>
+                        <option value="U+200A">Hair Space (U+200A)</option>
+                        <option value="U+2009">Thin Space (U+2009)</option>
+                        <option value="U+00A0">Non Breaking Space (U+00A0)</option>
+                    </select>
                 </div>
-                <div class="preview-content">
-                    <div class="preview-item">
-                        <h4>النص الأصلي</h4>
-                        <div id="previewOriginal" class="preview-text"></div>
-                    </div>
-                    <div class="preview-item">
-                        <h4>النص المعالج</h4>
-                        <div id="previewProcessed" class="preview-text"></div>
-                    </div>
-                </div>
+
+                <button id="autoBtn" class="primary-btn" type="button"><i class="fas fa-wand-magic-sparkles"></i><span>حماية النص الآن</span><kbd>⌘↵</kbd></button>
+                <button id="convertBtn" class="manual-link" type="button">تحويل بالطريقة المختارة</button>
             </section>
 
-            <!-- Options Section -->
-            <section class="card options-card">
-                <div class="card-header">
-                    <label><i class="fas fa-cog"></i> خيارات المعالجة</label>
-                    <button id="advancedToggle" class="text-btn"><i class="fas fa-sliders-h"></i> متقدم</button>
-                </div>
-                <div class="options-grid">
-                    <button id="autoBtn" class="primary-btn pulse">
-                        <i class="fas fa-magic"></i> تجربة أفضل طريقة تلقائيًا
-                    </button>
-                    <div class="custom-select-wrapper">
-                        <select id="joinerType">
-                            <option value="U+2060">Word Joiner (U+2060)</option>
-                            <option value="U+200D">Zero Width Joiner (U+200D)</option>
-                            <option value="U+200C">Zero Width Non-Joiner (U+200C)</option>
-                            <option value="U+200A">Hair Space (U+200A)</option>
-                            <option value="U+2009">Thin Space (U+2009)</option>
-                            <option value="U+00A0">Non Breaking Space (U+00A0)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Advanced Options -->
-                <div id="advancedOptions" class="advanced-options hidden">
-                    <div class="option-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="preserveDiacritics" checked>
-                            <span>الحفاظ على التشكيل والحروف الإضافية</span>
-                        </label>
-                    </div>
-                    <div class="option-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="smartSpacing" checked>
-                            <span>التنسيق العربي الذكي (محافظ)</span>
-                        </label>
-                    </div>
-                    <div class="option-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="preserveNumbers">
-                            <span>الحفاظ على الأرقام والرموز</span>
-                        </label>
-                    </div>
-                    <div class="option-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="autoRepairSpacing" checked>
-                            <span>تنظيف النص تلقائيًا عند اللصق والتحويل</span>
-                        </label>
-                    </div>
-                    <div class="option-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="autoDetectQuran" checked>
-                            <span>التعرف التلقائي على الآيات</span>
-                        </label>
-                    </div>
-                    <div class="quran-style-options">
-                        <div class="quran-style-heading"><i class="fas fa-quran"></i> تنسيق الآيات في التصدير</div>
-                        <label for="quranFontFamily">خط الآيات</label>
-                        <select id="quranFontFamily" class="input-field">
-                            <option value="Amiri">Amiri</option>
-                            <option value="Noto Naskh Arabic">Noto Naskh Arabic</option>
-                            <option value="Arial">Arial</option>
-                        </select>
-                        <div class="quran-style-row">
-                            <label for="quranTextColor">لون الآيات</label>
-                            <input type="color" id="quranTextColor" value="#2E7D32" aria-label="لون الآيات">
-                        </div>
-                        <div class="quran-style-row">
-                            <label for="quranFontSize">حجم الخط</label>
-                            <input type="range" id="quranFontSize" min="16" max="32" value="22" class="slider">
-                            <span id="quranFontSizeValue">22pt</span>
-                        </div>
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="quranKeepMarkers" checked>
-                            <span>إبقاء علامات ﴿﴾ حول الآية</span>
-                        </label>
-                    </div>
-                    <div class="option-group">
-                        <label>نسبة التطبيق:</label>
-                        <input type="range" id="applicationRatio" min="0" max="100" value="100" class="slider">
-                        <span id="ratioValue">100%</span>
-                    </div>
-                </div>
-
-                <button id="convertBtn" class="secondary-btn">تحويل الآن</button>
+            <section class="result-card" aria-labelledby="resultTitle">
+                <div class="result-heading"><div class="step-heading"><span class="step-number success">03</span><div><h2 id="resultTitle">النص المحمي</h2><p id="outputStats">جاهز لاستقبال النتيجة</p></div></div><button id="undoBtn" class="subtle-btn" type="button" disabled><i class="fas fa-rotate-left"></i> تراجع</button></div>
+                <textarea id="outputText" aria-label="النص الناتج" readonly placeholder="ستظهر النتيجة هنا بعد الضغط على حماية النص..."></textarea>
+                <div class="result-actions"><button id="copyBtn" class="copy-btn" type="button"><i class="fas fa-copy"></i> نسخ النص المحمي</button><button id="shareBtn" class="secondary-btn" type="button" aria-label="مشاركة النص"><i class="fas fa-share-nodes"></i></button></div>
+                <div class="secondary-actions"><button id="previewBtn" type="button"><i class="fas fa-eye"></i> معاينة</button><button id="saveBtn" type="button"><i class="fas fa-bookmark"></i> حفظ</button></div>
             </section>
 
-            <!-- Output Section -->
-            <section class="card output-card">
-                <div class="card-header">
-                    <label for="outputText"><i class="fas fa-check-circle"></i> النص الناتج</label>
-                    <button id="undoBtn" class="text-btn" disabled><i class="fas fa-undo"></i> استعادة السابق</button>
+            <button id="advancedToggle" type="button" class="hidden" aria-hidden="true">خيارات متقدمة</button><details id="advancedOptions" class="advanced-panel">
+                <summary><span><i class="fas fa-sliders"></i> خيارات متقدمة</span><small>التشكيل، المسافات، الآيات، والتصدير</small></summary>
+                <div class="advanced-content">
+                    <label class="check-row"><input type="checkbox" id="preserveDiacritics" checked><span>الحفاظ على التشكيل والحروف الإضافية</span></label>
+                    <label class="check-row"><input type="checkbox" id="smartSpacing" checked><span>التنسيق العربي الذكي</span></label>
+                    <label class="check-row"><input type="checkbox" id="preserveNumbers" checked><span>الحفاظ على الأرقام والرموز</span></label>
+                    <label class="check-row"><input type="checkbox" id="autoRepairSpacing" checked><span>تنظيف النص تلقائيًا</span></label>
+                    <label class="check-row"><input type="checkbox" id="autoDetectQuran" checked><span>التعرف على النصوص المشكلة</span></label>
+                    <div class="advanced-divider"></div>
+                    <div class="advanced-grid"><label>تنسيق الآيات<select id="quranFontFamily"><option>Amiri</option><option>Noto Naskh Arabic</option><option>Arial</option></select></label><label>نسبة التطبيق<input id="applicationRatio" type="range" min="0" max="100" value="100"><output id="ratioValue">100%</output></label></div>
+                    <div class="advanced-actions"><button id="exportPdfBtn" type="button"><i class="fas fa-file-pdf"></i> تصدير PDF</button><button id="exportDocxBtn" type="button"><i class="fas fa-file-word"></i> تصدير Word</button></div>
+                    <input id="quranTextColor" type="color" value="#2e7d32" hidden><input id="quranFontSize" type="range" value="22" hidden><span id="quranFontSizeValue" hidden>22pt</span><input id="quranKeepMarkers" type="checkbox" checked hidden>
                 </div>
-                <textarea id="outputText" readonly placeholder="سيظهر النص المحمي هنا..."></textarea>
-                <div class="stats-bar">
-                    <span id="outputStats">الأحرف بعد التحويل: 0</span>
-                </div>
-                <div class="action-grid">
-                    <button id="copyBtn" class="action-btn copy"><i class="fas fa-copy"></i> نسخ</button>
-                    <button id="shareBtn" class="action-btn share"><i class="fas fa-share-alt"></i> مشاركة</button>
-                    <button id="previewBtn" class="action-btn preview"><i class="fas fa-eye"></i> معاينة</button>
-                    <button id="saveBtn" class="action-btn save"><i class="fas fa-save"></i> حفظ</button>
-                    <button id="exportPdfBtn" class="action-btn export"><i class="fas fa-file-pdf"></i> PDF</button>
-                    <button id="exportDocxBtn" class="action-btn docx"><i class="fas fa-file-word"></i> Word</button>
-                </div>
-            </section>
+            </details>
 
-            <!-- Saved Texts Section -->
-            <section class="card saved-texts-card hidden">
-                <div class="card-header saved-texts-header">
-                    <div class="saved-title">
-                        <label><i class="fas fa-bookmark"></i> النصوص المحفوظة</label>
-                        <span id="savedCount" class="saved-count">0</span>
-                    </div>
-                    <button id="clearSavedBtn" class="text-btn danger"><i class="fas fa-trash-alt"></i> مسح الكل</button>
-                </div>
-                <div class="saved-tools">
-                    <input id="savedSearch" class="saved-search" type="search" placeholder="ابحث في السجل المحلي..." autocomplete="off">
-                    <div class="saved-filters" role="group" aria-label="فلاتر السجل المحلي">
-                        <select id="savedTypeFilter" class="saved-filter" aria-label="فلترة حسب طريقة المعالجة">
-                            <option value="all">كل الطرق</option>
-                            <option value="U+2060">Word Joiner</option>
-                            <option value="U+200D">Zero Width Joiner</option>
-                            <option value="U+200C">Zero Width Non-Joiner</option>
-                            <option value="U+200A">Hair Space</option>
-                            <option value="U+2009">Thin Space</option>
-                        </select>
-                        <select id="savedDateFilter" class="saved-filter" aria-label="فلترة حسب التاريخ">
-                            <option value="all">كل التواريخ</option>
-                            <option value="today">اليوم</option>
-                            <option value="week">آخر 7 أيام</option>
-                            <option value="month">آخر 30 يومًا</option>
-                        </select>
-                        <select id="savedSort" class="saved-filter" aria-label="ترتيب السجل">
-                            <option value="newest">الأحدث أولًا</option>
-                            <option value="oldest">الأقدم أولًا</option>
-                        </select>
-                    </div>
-                </div>
-                <div id="savedTextsList" class="saved-texts-list">
-                    <p class="empty-message">لا توجد نصوص محفوظة</p>
-                </div>
-            </section>
+            <section class="saved-card hidden" aria-label="النصوص المحفوظة"><div class="saved-heading"><div><span class="step-number">04</span><h2>النصوص المحفوظة <span id="savedCount">0</span></h2></div><button id="clearSavedBtn" class="subtle-btn danger" type="button">مسح الكل</button></div><div class="saved-filters"><input id="savedSearch" type="search" placeholder="ابحث في السجل المحلي..." aria-label="البحث في النصوص المحفوظة"><select id="savedTypeFilter" aria-label="فلترة الطريقة"><option>كل الطرق</option></select><select id="savedDateFilter" aria-label="فلترة التاريخ"><option>كل التواريخ</option></select><select id="savedSort" aria-label="ترتيب السجل"><option>الأحدث أولًا</option><option>الأقدم أولًا</option></select></div><div id="savedTextsList"></div></section>
         </main>
 
-        <footer>
-            <p>&copy; 2026 WordJoiner PRO | <a href="https://github.com/sci5a/WordJoiner-TikTok-Tool" target="_blank">GitHub</a></p>
-        </footer>
+        <footer><span>WordJoiner PRO</span><span>حماية محلية وخصوصية أولًا</span><a href="https://github.com/sci5a/WordJoiner-TikTok-Tool" target="_blank" rel="noopener">المشروع على GitHub</a></footer>
     </div>
 
-    <!-- Modals -->
-    <!-- History Modal -->
-    <div id="historyModal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-history"></i> سجل التحويلات</h2>
-                <button class="close-btn" data-modal="historyModal"><i class="fas fa-times"></i></button>
-            </div>
-            <div id="historyList" class="history-list">
-                <p class="empty-message">لا يوجد سجل تحويلات</p>
-            </div>
-        </div>
-    </div>
+    <section class="preview-card hidden" aria-label="معاينة المقارنة"><div class="result-heading"><div class="step-heading"><span class="step-number">↔</span><div><h2>معاينة المقارنة</h2><p>راجع النص قبل نسخه</p></div></div><button id="closePreview" class="subtle-btn" type="button">إغلاق</button></div><div class="preview-content"><div><h3>الأصلي</h3><div id="previewOriginal" class="preview-text"></div></div><div><h3>المحمي</h3><div id="previewProcessed" class="preview-text"></div></div></div></section>
 
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-cog"></i> الإعدادات</h2>
-                <button class="close-btn" data-modal="settingsModal"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="settings-content">
-                <div class="setting-item">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="autoSaveSettings" checked>
-                        <span>الحفظ التلقائي للنصوص</span>
-                    </label>
-                </div>
-                <div class="setting-item">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="showNotifications" checked>
-                        <span>إظهار الإشعارات</span>
-                    </label>
-                </div>
-                <div class="setting-item">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="enableHistory" checked>
-                        <span>تفعيل سجل التحويلات</span>
-                    </label>
-                </div>
-                <div class="setting-item">
-                    <label>عدد السجلات المحفوظة:</label>
-                    <input type="number" id="maxHistoryItems" min="5" max="100" value="20" class="input-field">
-                </div>
-                <button id="clearAllData" class="danger-btn"><i class="fas fa-trash-alt"></i> مسح جميع البيانات</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast Notification -->
-    <div id="toast" class="toast hidden">تم النسخ بنجاح!</div>
-
-    <script src="arabic-spacing.js?v=5"></script>
-    <script src="arabic-text-formatter.js?v=2"></script>
-    <script src="quran-segmentation.js?v=1"></script>
-    <script src="docx-export.js?v=1"></script>
-    <script src="script.js?v=6"></script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (!window.__wordJoinerReloaded) {
-                    window.__wordJoinerReloaded = true;
-                    window.location.reload();
-                }
-            });
-
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => {
-                        // Check for a fresh processing script on every app launch.
-                        reg.update();
-                        console.log('PWA Service Worker registered and updated');
-                    })
-                    .catch(err => console.log('PWA Service Worker registration failed', err));
-            });
-        }
-    </script>
+    <div id="historyModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="سجل التحويلات"><div class="modal-content"><div class="modal-title"><h2>سجل التحويلات</h2><button class="close-btn" data-modal="historyModal" type="button">×</button></div><div id="historyList"><p>لا يوجد سجل تحويلات</p></div></div></div>
+    <div id="settingsModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="الإعدادات"><div class="modal-content"><div class="modal-title"><h2>الإعدادات</h2><button class="close-btn" data-modal="settingsModal" type="button">×</button></div><div class="settings-content"><label class="check-row"><input id="autoSaveSettings" type="checkbox" checked><span>الحفظ التلقائي للنصوص</span></label><label class="check-row"><input id="showNotifications" type="checkbox" checked><span>إظهار الإشعارات</span></label><label class="check-row"><input id="enableHistory" type="checkbox" checked><span>تفعيل سجل التحويلات</span></label><input id="maxHistoryItems" type="number" min="5" max="100" value="20" aria-label="عدد السجلات"><button id="clearAllData" class="danger-btn" type="button">مسح جميع البيانات</button></div></div></div>
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+    <script src="script.js"></script>
+    <script>if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').then(reg => reg.update()).catch(() => {}));</script>
 </body>
 </html>
