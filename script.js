@@ -60,6 +60,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const historyModal = document.getElementById('historyModal');
     const settingsModal = document.getElementById('settingsModal');
     const historyList = document.getElementById('historyList');
+    const historyCount = document.getElementById('historyCount');
+    const historySearch = document.getElementById('historySearch');
+    const historyTypeFilter = document.getElementById('historyTypeFilter');
+    const historyDateFilter = document.getElementById('historyDateFilter');
+    const historySort = document.getElementById('historySort');
     const autoSaveSettings = document.getElementById('autoSaveSettings');
     const showNotifications = document.getElementById('showNotifications');
     const enableHistory = document.getElementById('enableHistory');
@@ -91,14 +96,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ==================== Initialization ====================
     const MAX_SAVED_TEXTS = 100;
-    initializeApp();
+    // يتم تشغيل التهيئة في نهاية الملف بعد تعريف ثوابت IndexedDB وجميع الدوال.
 
-    function initializeApp() {
+    async function initializeApp() {
         loadSettings();
         loadSavedTexts();
-        loadConversionHistory();
         setupTheme();
         attachEventListeners();
+        await loadConversionHistory();
     }
 
     // ==================== Theme Management ====================
@@ -173,6 +178,15 @@ document.addEventListener('DOMContentLoaded', () => {
         clearSavedBtn.addEventListener('click', clearAllSavedTexts);
 
         // History & Settings
+        [historySearch, historyTypeFilter, historyDateFilter, historySort].forEach(control => {
+            control?.addEventListener('input', updateHistoryList);
+            control?.addEventListener('change', updateHistoryList);
+        });
+        historyList?.addEventListener('click', event => {
+            const button = event.target.closest('[data-history-action]');
+            if (!button) return;
+            handleHistoryAction(button.dataset.historyAction, button.dataset.historyId);
+        });
         historyBtn.addEventListener('click', () => openModal('historyModal'));
         settingsBtn.addEventListener('click', () => openModal('settingsModal'));
 
@@ -388,9 +402,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateQuranStyleAvailability() {
         const disabled = !autoDetectQuran.checked;
-        quranStyleOptions.classList.toggle('is-disabled', disabled);
+        quranStyleOptions?.classList.toggle('is-disabled', disabled);
         [quranFontFamily, quranTextColor, quranFontSize, quranKeepMarkers].forEach(control => {
-            control.disabled = disabled;
+            if (control) control.disabled = disabled;
         });
     }
 
@@ -757,11 +771,11 @@ document.addEventListener('DOMContentLoaded', () => {
         savedCount.textContent = items.length === allItems.length ? `${allItems.length}` : `${items.length}/${allItems.length}`;
         if (allItems.length === 0) {
             savedTextsList.innerHTML = '<p class="empty-message">لا توجد نصوص محفوظة</p>';
-            savedTextsCard.classList.add('hidden');
+            savedTextsCard?.classList.add('hidden');
             return;
         }
 
-        savedTextsCard.classList.remove('hidden');
+        savedTextsCard?.classList.remove('hidden');
         if (items.length === 0) {
             savedTextsList.innerHTML = '<p class="empty-message">لا توجد نتائج مطابقة للفلاتر الحالية</p>';
             return;
@@ -834,66 +848,322 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('تم حذف النص من السجل المحلي', 'success');
     };
 
-    // ==================== History ====================
-    function addToHistory(input, output, type) {
-        const historyItem = {
-            id: Date.now(),
+    // ==================== IndexedDB History ====================
+    const HISTORY_DB_NAME = 'wordjoiner-pro-db';
+    const HISTORY_DB_VERSION = 2;
+    const HISTORY_STORE = 'conversions';
+    const HISTORY_MIGRATION_KEY = 'wordjoiner_history_migrated_v1';
+    let historyDBPromise;
+
+    function openHistoryDB() {
+        if (historyDBPromise) return historyDBPromise;
+
+        historyDBPromise = new Promise((resolve, reject) => {
+            if (!('indexedDB' in window)) {
+                reject(new Error('IndexedDB is not supported'));
+                return;
+            }
+
+            const request = indexedDB.open(HISTORY_DB_NAME, HISTORY_DB_VERSION);
+            request.onupgradeneeded = event => {
+                const db = event.target.result;
+                const store = db.objectStoreNames.contains(HISTORY_STORE)
+                    ? event.target.transaction.objectStore(HISTORY_STORE)
+                    : db.createObjectStore(HISTORY_STORE, { keyPath: 'id' });
+
+                if (!store.indexNames.contains('createdAt')) {
+                    store.createIndex('createdAt', 'createdAt', { unique: false });
+                }
+                if (!store.indexNames.contains('type')) {
+                    store.createIndex('type', 'type', { unique: false });
+                }
+            };
+
+            request.onsuccess = () => {
+                const db = request.result;
+                db.onversionchange = () => db.close();
+                resolve(db);
+            };
+            request.onerror = () => reject(request.error);
+        });
+
+        return historyDBPromise;
+    }
+
+    async function getAllHistoryFromDB() {
+        const db = await openHistoryDB();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(HISTORY_STORE, 'readonly');
+            const request = transaction.objectStore(HISTORY_STORE).getAll();
+            request.onsuccess = () => resolve(Array.isArray(request.result) ? request.result : []);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async function putHistoryInDB(item) {
+        const db = await openHistoryDB();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(HISTORY_STORE, 'readwrite');
+            transaction.objectStore(HISTORY_STORE).put(item);
+            transaction.oncomplete = () => resolve(item);
+            transaction.onerror = () => reject(transaction.error);
+            transaction.onabort = () => reject(transaction.error);
+        });
+    }
+
+    async function deleteHistoryFromDB(id) {
+        const db = await openHistoryDB();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(HISTORY_STORE, 'readwrite');
+            transaction.objectStore(HISTORY_STORE).delete(String(id));
+            transaction.oncomplete = resolve;
+            transaction.onerror = () => reject(transaction.error);
+            transaction.onabort = () => reject(transaction.error);
+        });
+    }
+
+    async function clearHistoryDB() {
+        const db = await openHistoryDB();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(HISTORY_STORE, 'readwrite');
+            transaction.objectStore(HISTORY_STORE).clear();
+            transaction.oncomplete = resolve;
+            transaction.onerror = () => reject(transaction.error);
+            transaction.onabort = () => reject(transaction.error);
+        });
+    }
+
+    function createHistoryId(createdAt = Date.now()) {
+        const suffix = typeof crypto?.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : Math.random().toString(36).slice(2);
+        return `${createdAt}-${suffix}`;
+    }
+
+    function normalizeHistoryItem(item, index = 0) {
+        const createdAt = Number(item?.createdAt) || Number(item?.id) || Date.now() - index;
+        return {
+            id: String(item?.id || createHistoryId(createdAt)),
+            input: String(item?.input || ''),
+            output: String(item?.output || ''),
+            type: String(item?.type || 'U+2060'),
+            timestamp: item?.timestamp || new Date(createdAt).toLocaleString('ar-SA'),
+            createdAt
+        };
+    }
+
+    async function migrateLegacyHistory() {
+        if (localStorage.getItem(HISTORY_MIGRATION_KEY) === '1') return [];
+
+        const saved = localStorage.getItem('wordjoiner_history');
+        if (!saved) {
+            localStorage.setItem(HISTORY_MIGRATION_KEY, '1');
+            return [];
+        }
+
+        let legacyItems;
+        try {
+            legacyItems = JSON.parse(saved);
+        } catch (error) {
+            console.warn('Invalid legacy conversion history:', error);
+            localStorage.removeItem('wordjoiner_history');
+            localStorage.setItem(HISTORY_MIGRATION_KEY, '1');
+            return [];
+        }
+
+        const items = Array.isArray(legacyItems)
+            ? legacyItems
+                .filter(item => item && typeof item.output === 'string')
+                .map(normalizeHistoryItem)
+            : [];
+
+        for (const item of items) {
+            await putHistoryInDB(item);
+        }
+
+        // لا نحذف النسخة القديمة قبل اكتمال جميع عمليات الكتابة.
+        localStorage.removeItem('wordjoiner_history');
+        localStorage.setItem(HISTORY_MIGRATION_KEY, '1');
+        return items;
+    }
+
+    async function addToHistory(input, output, type) {
+        const now = Date.now();
+        const historyItem = normalizeHistoryItem({
+            id: createHistoryId(now),
             input,
             output,
             type,
-            timestamp: new Date().toLocaleString('ar-SA')
-        };
+            createdAt: now,
+            timestamp: new Date(now).toLocaleString('ar-SA')
+        });
+
+        const duplicate = appState.conversions.find(item =>
+            item.input === historyItem.input &&
+            item.output === historyItem.output &&
+            item.type === historyItem.type
+        );
 
         appState.conversions = [
             historyItem,
-            ...appState.conversions.filter(item => !(item.input === input && item.output === output && item.type === type))
+            ...appState.conversions.filter(item => item !== duplicate)
         ].slice(0, Math.max(10, Number(appState.settings.maxHistoryItems) || 30));
+        updateHistoryFilters();
+        updateHistoryList();
 
         try {
-            localStorage.setItem('wordjoiner_history', JSON.stringify(appState.conversions));
+            if (duplicate?.id) await deleteHistoryFromDB(duplicate.id);
+            await putHistoryInDB(historyItem);
+            await trimHistoryDB();
         } catch (error) {
-            appState.conversions = appState.conversions.slice(0, 10);
-            try {
-                localStorage.setItem('wordjoiner_history', JSON.stringify(appState.conversions));
-            } catch (retryError) {
-                console.warn('Unable to persist conversion history:', retryError);
-            }
+            console.warn('Unable to persist conversion history in IndexedDB:', error);
+            showToast('تعذر حفظ السجل، لكن التحويل اكتمل', 'warning');
+        }
+
+        return historyItem;
+    }
+
+    async function trimHistoryDB() {
+        const maxItems = Math.max(10, Number(appState.settings.maxHistoryItems) || 30);
+        const items = (await getAllHistoryFromDB())
+            .sort((a, b) => getHistoryTimestamp(b) - getHistoryTimestamp(a));
+
+        await Promise.all(
+            items.slice(maxItems).map(item => deleteHistoryFromDB(item.id))
+        );
+    }
+
+    async function loadConversionHistory() {
+        try {
+            await migrateLegacyHistory();
+            const items = await getAllHistoryFromDB();
+            appState.conversions = items
+                .map(normalizeHistoryItem)
+                .sort((a, b) => getHistoryTimestamp(b) - getHistoryTimestamp(a));
+            updateHistoryFilters();
+            updateHistoryList();
+        } catch (error) {
+            console.warn('Unable to load IndexedDB history:', error);
+            appState.conversions = [];
+            updateHistoryFilters();
+            updateHistoryList();
         }
     }
 
-    function loadConversionHistory() {
-        const saved = localStorage.getItem('wordjoiner_history');
-        if (!saved) return;
+    function getHistoryTimestamp(item) {
+        const value = Number(item?.createdAt || item?.id);
+        return Number.isFinite(value) ? value : 0;
+    }
 
-        try {
-            const parsed = JSON.parse(saved);
-            appState.conversions = Array.isArray(parsed)
-                ? parsed.filter(item => item && typeof item.output === 'string')
-                : [];
-        } catch (error) {
-            console.warn('Invalid conversion history; resetting local history:', error);
-            appState.conversions = [];
-            localStorage.removeItem('wordjoiner_history');
+    function normalizeHistorySearch(value) {
+        return String(value || '').normalize('NFKC').toLocaleLowerCase('ar').trim();
+    }
+
+    function matchesHistoryDate(item, filter) {
+        if (!filter || filter === 'all') return true;
+        const timestamp = getHistoryTimestamp(item);
+        if (!timestamp) return false;
+        const now = Date.now();
+        if (filter === 'today') {
+            const start = new Date();
+            start.setHours(0, 0, 0, 0);
+            return timestamp >= start.getTime();
         }
+        if (filter === 'week') return timestamp >= now - 7 * 24 * 60 * 60 * 1000;
+        if (filter === 'month') return timestamp >= now - 30 * 24 * 60 * 60 * 1000;
+        return true;
+    }
+
+    function updateHistoryFilters() {
+        if (!historyTypeFilter) return;
+        const current = historyTypeFilter.value || 'all';
+        const types = [...new Set(appState.conversions.map(item => item.type || 'U+2060'))].sort();
+        historyTypeFilter.innerHTML = '<option value="all">كل الطرق</option>' +
+            types.map(type => `<option value="${escapeHtml(type)}">${escapeHtml(type)}</option>`).join('');
+        historyTypeFilter.value = types.includes(current) ? current : 'all';
+    }
+
+    function getFilteredHistoryItems() {
+        const query = normalizeHistorySearch(historySearch?.value);
+        const type = historyTypeFilter?.value || 'all';
+        const date = historyDateFilter?.value || 'all';
+        const sort = historySort?.value || 'newest';
+
+        return appState.conversions
+            .filter(item => type === 'all' || (item.type || 'U+2060') === type)
+            .filter(item => matchesHistoryDate(item, date))
+            .filter(item => {
+                if (!query) return true;
+                const searchable = normalizeHistorySearch(`${item.input} ${item.output} ${item.type}`);
+                return searchable.includes(query);
+            })
+            .sort((a, b) => {
+                const difference = getHistoryTimestamp(a) - getHistoryTimestamp(b);
+                return sort === 'oldest' ? difference : -difference;
+            });
     }
 
     function updateHistoryList() {
-        if (appState.conversions.length === 0) {
-            historyList.innerHTML = '<p class="empty-message">لا يوجد سجل تحويلات</p>';
+        if (!historyList) return;
+        const allItems = appState.conversions;
+        const items = getFilteredHistoryItems();
+        if (historyCount) {
+            historyCount.textContent = items.length === allItems.length
+                ? String(allItems.length)
+                : `${items.length}/${allItems.length}`;
+        }
+
+        if (allItems.length === 0) {
+            historyList.innerHTML = '<p class="empty-message">لا يوجد سجل تحويلات بعد</p>';
+            return;
+        }
+        if (items.length === 0) {
+            historyList.innerHTML = '<p class="empty-message">لا توجد نتائج مطابقة للبحث أو الفلاتر</p>';
             return;
         }
 
-        historyList.innerHTML = appState.conversions.map(item => `
-            <div class="history-item">
-                <div class="history-item-text"><strong>النوع:</strong> ${escapeHtml(item.type || 'U+2060')}</div>
-                <div class="history-item-text"><strong>النص:</strong> ${escapeHtml((item.input || item.output || '').replace(/\s+/gu, ' ').slice(0, 140))}...</div>
-                <div class="history-item-time">${escapeHtml(item.timestamp || '')}</div>
-                <div class="history-item-actions">
-                    <button onclick="window.loadFromHistory('${item.id}')"><i class="fas fa-redo"></i> استعادة</button>
-                    <button onclick="window.copyFromHistory('${item.id}')"><i class="fas fa-copy"></i> نسخ</button>
+        historyList.innerHTML = items.map(item => {
+            const preview = (item.input || item.output || '')
+                .replace(/\s+/gu, ' ').trim().slice(0, 140);
+            return `
+                <div class="history-item">
+                    <div class="history-item-text"><strong>النوع:</strong> ${escapeHtml(item.type || 'U+2060')}</div>
+                    <div class="history-item-text"><strong>النص:</strong> ${escapeHtml(preview)}${preview.length >= 140 ? '…' : ''}</div>
+                    <div class="history-item-time">${escapeHtml(item.timestamp || '')}</div>
+                    <div class="history-item-actions">
+                        <button type="button" data-history-action="load" data-history-id="${escapeHtml(item.id)}"><i class="fas fa-redo"></i> استعادة</button>
+                        <button type="button" data-history-action="copy" data-history-id="${escapeHtml(item.id)}"><i class="fas fa-copy"></i> نسخ</button>
+                        <button type="button" data-history-action="delete" data-history-id="${escapeHtml(item.id)}" aria-label="حذف العنصر"><i class="fas fa-trash-alt"></i> حذف</button>
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
+    }
+
+    async function handleHistoryAction(action, id) {
+        const item = appState.conversions.find(historyItem => String(historyItem.id) === String(id));
+        if (!item) return;
+
+        if (action === 'load') {
+            window.loadFromHistory(id);
+            return;
+        }
+        if (action === 'copy') {
+            await window.copyFromHistory(id);
+            return;
+        }
+        if (action === 'delete' && confirm('هل تريد حذف هذا العنصر من سجل التحويلات؟')) {
+            try {
+                await deleteHistoryFromDB(item.id);
+                appState.conversions = appState.conversions.filter(historyItem => historyItem.id !== item.id);
+                updateHistoryFilters();
+                updateHistoryList();
+                showToast('تم حذف العنصر من السجل', 'success');
+            } catch (error) {
+                console.warn('Unable to delete history item:', error);
+                showToast('تعذر حذف العنصر', 'warning');
+            }
+        }
     }
 
     window.loadFromHistory = (id) => {
@@ -912,11 +1182,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    window.copyFromHistory = (id) => {
-        const item = appState.conversions.find(h => h.id == id);
-        if (item) {
-            navigator.clipboard.writeText(item.output);
+    window.copyFromHistory = async (id) => {
+        const item = appState.conversions.find(h => String(h.id) === String(id));
+        if (!item) return;
+
+        try {
+            await navigator.clipboard.writeText(item.output || '');
             showToast('تم نسخ النص من السجل', 'success');
+        } catch (error) {
+            outputText.value = item.output || '';
+            outputText.focus();
+            outputText.select();
+            showToast('تعذر النسخ التلقائي؛ تم تحديد النص لنسخه يدويًا', 'warning');
         }
     };
 
@@ -946,18 +1223,26 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('wordjoiner_settings', JSON.stringify(appState.settings));
     }
 
-    function clearAllAppData() {
-        if (confirm('هل أنت متأكد من حذف جميع البيانات؟ لا يمكن التراجع عن هذا الإجراء!')) {
+    async function clearAllAppData() {
+        if (!confirm('هل أنت متأكد من حذف جميع البيانات؟ لا يمكن التراجع عن هذا الإجراء!')) return;
+
+        try {
+            await clearHistoryDB();
             localStorage.removeItem('wordjoiner_saved_texts');
             localStorage.removeItem('wordjoiner_history');
+            localStorage.removeItem(HISTORY_MIGRATION_KEY);
             localStorage.removeItem('wordjoiner_settings');
-            
+
             appState.savedTexts = [];
             appState.conversions = [];
-            
+
             updateSavedTextsList();
+            updateHistoryFilters();
             updateHistoryList();
             showToast('تم حذف جميع البيانات', 'success');
+        } catch (error) {
+            console.warn('Unable to clear all application data:', error);
+            showToast('تعذر حذف سجل التحويلات من الجهاز', 'warning');
         }
     }
 
@@ -992,4 +1277,6 @@ document.addEventListener('DOMContentLoaded', () => {
             toast.classList.remove('show');
         }, 3000);
     }
+
+    initializeApp();
 });
