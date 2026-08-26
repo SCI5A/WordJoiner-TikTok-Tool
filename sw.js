@@ -1,10 +1,10 @@
 // Bump this whenever a processing rule or client asset changes.
-const CACHE_NAME = 'wordjoiner-pro-v15';
+const CACHE_NAME = 'wordjoiner-pro-v16';
 const CORE_ASSETS = [
   './',
   './index.html',
   './style.css',
-  './script.js?v=6',
+  './script.js?v=7',
   './arabic-spacing.js?v=5',
   './arabic-text-formatter.js?v=2',
   './quran-segmentation.js?v=1',

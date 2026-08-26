@@ -94,7 +94,21 @@
     <div id="historyModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="سجل التحويلات"><div class="modal-content"><div class="modal-title"><h2>سجل التحويلات <span id="historyCount" class="history-count">0</span></h2><button class="close-btn" data-modal="historyModal" type="button">×</button></div><div class="history-filters" role="search"><input id="historySearch" type="search" placeholder="ابحث في النص أو الطريقة..." aria-label="البحث في سجل التحويلات"><select id="historyTypeFilter" aria-label="فلترة طريقة التحويل"><option value="all">كل الطرق</option></select><select id="historyDateFilter" aria-label="فلترة تاريخ التحويل"><option value="all">كل التواريخ</option><option value="today">اليوم</option><option value="week">آخر 7 أيام</option><option value="month">آخر 30 يومًا</option></select><select id="historySort" aria-label="ترتيب سجل التحويلات"><option value="newest">الأحدث أولًا</option><option value="oldest">الأقدم أولًا</option></select></div><div id="historyList"><p class="empty-message">لا يوجد سجل تحويلات</p></div></div></div>
     <div id="settingsModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="الإعدادات"><div class="modal-content"><div class="modal-title"><h2>الإعدادات</h2><button class="close-btn" data-modal="settingsModal" type="button">×</button></div><div class="settings-content"><label class="check-row"><input id="autoSaveSettings" type="checkbox" checked><span>الحفظ التلقائي للنصوص</span></label><label class="check-row"><input id="showNotifications" type="checkbox" checked><span>إظهار الإشعارات</span></label><label class="check-row"><input id="enableHistory" type="checkbox" checked><span>تفعيل سجل التحويلات</span></label><input id="maxHistoryItems" type="number" min="5" max="100" value="20" aria-label="عدد السجلات"><button id="clearAllData" class="danger-btn" type="button">مسح جميع البيانات</button></div></div></div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
-    <script src="script.js"></script>
-    <script>if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').then(reg => reg.update()).catch(() => {}));</script>
+    <script src="script.js?v=7" defer></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', async () => {
+          try {
+            const registration = await navigator.serviceWorker.register('./sw.js', {
+              scope: './',
+              updateViaCache: 'none'
+            });
+            await registration.update();
+          } catch (error) {
+            console.warn('Service Worker registration failed:', error);
+          }
+        });
+      }
+    </script>
 </body>
 </html>
