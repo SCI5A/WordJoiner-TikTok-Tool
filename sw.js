@@ -1,10 +1,11 @@
 // Bump this whenever a processing rule or client asset changes.
-const CACHE_NAME = 'wordjoiner-pro-v16';
+const CACHE_NAME = 'wordjoiner-pro-v17';
 const CORE_ASSETS = [
   './',
   './index.html',
   './style.css',
-  './script.js?v=7',
+  './script.js?v=8',
+  './vendor/xlsx.full.min.js',
   './arabic-spacing.js?v=5',
   './arabic-text-formatter.js?v=2',
   './quran-segmentation.js?v=1',
@@ -67,6 +68,7 @@ self.addEventListener('fetch', event => {
     pathname.endsWith('/arabic-text-formatter.js') ||
     pathname.endsWith('/quran-segmentation.js') ||
     pathname.endsWith('/docx-export.js') ||
+    pathname.endsWith('/vendor/xlsx.full.min.js') ||
     pathname.endsWith('/sw.js');
 
   if (request.method !== 'GET') return;

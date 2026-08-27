@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Save
     const saveBtn = document.getElementById('saveBtn');
-    const savedTextsCard = document.querySelector('.saved-texts-card');
+    const savedTextsCard = document.querySelector('.saved-card');
     const savedTextsList = document.getElementById('savedTextsList');
     const savedSearch = document.getElementById('savedSearch');
     const savedTypeFilter = document.getElementById('savedTypeFilter');
@@ -65,6 +65,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const historyTypeFilter = document.getElementById('historyTypeFilter');
     const historyDateFilter = document.getElementById('historyDateFilter');
     const historySort = document.getElementById('historySort');
+    const importHistoryBtn = document.getElementById('importHistoryBtn');
+    const historyImportInput = document.getElementById('historyImportInput');
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+    const historyDetailsModal = document.getElementById('historyDetailsModal');
+    const historyDetailsType = document.getElementById('historyDetailsType');
+    const historyDetailsTimestamp = document.getElementById('historyDetailsTimestamp');
+    const historyDetailsLength = document.getElementById('historyDetailsLength');
+    const historyDetailsInput = document.getElementById('historyDetailsInput');
+    const historyDetailsOutput = document.getElementById('historyDetailsOutput');
+    const historyDetailsCopyInputBtn = document.getElementById('historyDetailsCopyInputBtn');
+    const historyDetailsCopyOutputBtn = document.getElementById('historyDetailsCopyOutputBtn');
+    const historyDetailsRestoreBtn = document.getElementById('historyDetailsRestoreBtn');
+    const historyDetailsDeleteBtn = document.getElementById('historyDetailsDeleteBtn');
+    const confirmModal = document.getElementById('confirmModal');
+    const confirmModalMessage = document.getElementById('confirmModalMessage');
+    const confirmActionBtn = document.getElementById('confirmActionBtn');
+    const cancelConfirmBtn = document.getElementById('cancelConfirmBtn');
     const autoSaveSettings = document.getElementById('autoSaveSettings');
     const showNotifications = document.getElementById('showNotifications');
     const enableHistory = document.getElementById('enableHistory');
@@ -78,6 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
             previousOutput: ''
         },
         conversions: [],
+        filteredConversions: [],
         savedTexts: [],
         settings: {
             autoSave: true,
@@ -187,7 +205,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!button) return;
             handleHistoryAction(button.dataset.historyAction, button.dataset.historyId);
         });
+        importHistoryBtn?.addEventListener('click', () => historyImportInput?.click());
+        historyImportInput?.addEventListener('change', handleHistoryImport);
+        clearHistoryBtn?.addEventListener('click', requestClearHistory);
         historyBtn.addEventListener('click', () => openModal('historyModal'));
+        historyDetailsCopyInputBtn?.addEventListener('click', () => copyHistoryDetail('input'));
+        historyDetailsCopyOutputBtn?.addEventListener('click', () => copyHistoryDetail('output'));
+        historyDetailsRestoreBtn?.addEventListener('click', restoreHistoryDetail);
+        historyDetailsDeleteBtn?.addEventListener('click', deleteHistoryDetail);
+        confirmActionBtn?.addEventListener('click', confirmPendingAction);
+        cancelConfirmBtn?.addEventListener('click', cancelPendingAction);
         settingsBtn.addEventListener('click', () => openModal('settingsModal'));
 
         // Modal Close Buttons
@@ -854,6 +881,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const HISTORY_STORE = 'conversions';
     const HISTORY_MIGRATION_KEY = 'wordjoiner_history_migrated_v1';
     let historyDBPromise;
+    let selectedHistoryId = null;
+    let pendingHistoryAction = null;
 
     function openHistoryDB() {
         if (historyDBPromise) return historyDBPromise;
@@ -1107,6 +1136,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!historyList) return;
         const allItems = appState.conversions;
         const items = getFilteredHistoryItems();
+        appState.filteredConversions = items;
         if (historyCount) {
             historyCount.textContent = items.length === allItems.length
                 ? String(allItems.length)
@@ -1131,6 +1161,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="history-item-text"><strong>النص:</strong> ${escapeHtml(preview)}${preview.length >= 140 ? '…' : ''}</div>
                     <div class="history-item-time">${escapeHtml(item.timestamp || '')}</div>
                     <div class="history-item-actions">
+                        <button type="button" data-history-action="details" data-history-id="${escapeHtml(item.id)}"><i class="fas fa-eye"></i> تفاصيل</button>
                         <button type="button" data-history-action="load" data-history-id="${escapeHtml(item.id)}"><i class="fas fa-redo"></i> استعادة</button>
                         <button type="button" data-history-action="copy" data-history-id="${escapeHtml(item.id)}"><i class="fas fa-copy"></i> نسخ</button>
                         <button type="button" data-history-action="delete" data-history-id="${escapeHtml(item.id)}" aria-label="حذف العنصر"><i class="fas fa-trash-alt"></i> حذف</button>
@@ -1144,6 +1175,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const item = appState.conversions.find(historyItem => String(historyItem.id) === String(id));
         if (!item) return;
 
+        if (action === 'details') {
+            openHistoryDetails(id);
+            return;
+        }
         if (action === 'load') {
             window.loadFromHistory(id);
             return;
@@ -1152,17 +1187,227 @@ document.addEventListener('DOMContentLoaded', () => {
             await window.copyFromHistory(id);
             return;
         }
-        if (action === 'delete' && confirm('هل تريد حذف هذا العنصر من سجل التحويلات؟')) {
-            try {
-                await deleteHistoryFromDB(item.id);
-                appState.conversions = appState.conversions.filter(historyItem => historyItem.id !== item.id);
-                updateHistoryFilters();
-                updateHistoryList();
-                showToast('تم حذف العنصر من السجل', 'success');
-            } catch (error) {
-                console.warn('Unable to delete history item:', error);
-                showToast('تعذر حذف العنصر', 'warning');
+        if (action === 'delete') {
+            requestHistoryDelete(id);
+        }
+    }
+
+    function getHistoryItem(id) {
+        return appState.conversions.find(item => String(item.id) === String(id));
+    }
+
+    function openHistoryDetails(id) {
+        const item = getHistoryItem(id);
+        if (!item || !historyDetailsModal) return;
+
+        selectedHistoryId = String(item.id);
+        historyDetailsType.textContent = item.type || 'U+2060';
+        historyDetailsTimestamp.textContent = item.timestamp || '—';
+        historyDetailsLength.textContent = String((item.output || '').length);
+        historyDetailsInput.textContent = item.input || '';
+        historyDetailsOutput.textContent = item.output || '';
+
+        closeModal('historyModal');
+        openModal('historyDetailsModal');
+    }
+
+    async function copyHistoryDetail(field) {
+        const item = getHistoryItem(selectedHistoryId);
+        if (!item) return;
+
+        const value = field === 'input' ? item.input : item.output;
+        if (!value) {
+            showToast('لا يوجد نص لنسخه', 'warning');
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(value);
+            showToast('تم نسخ النص من التفاصيل', 'success');
+        } catch (error) {
+            showToast('تعذر النسخ التلقائي من هذا المتصفح', 'warning');
+        }
+    }
+
+    function restoreHistoryDetail() {
+        if (!selectedHistoryId) return;
+        window.loadFromHistory(selectedHistoryId);
+        closeModal('historyDetailsModal');
+    }
+
+    function deleteHistoryDetail() {
+        if (!selectedHistoryId) return;
+        requestHistoryDelete(selectedHistoryId);
+    }
+
+    function openHistoryConfirmation(message, action) {
+        if (!confirmModal || !confirmModalMessage || !confirmActionBtn) return;
+        pendingHistoryAction = action;
+        confirmModalMessage.textContent = message;
+        confirmActionBtn.textContent = 'تأكيد الحذف';
+        openModal('confirmModal');
+    }
+
+    function requestHistoryDelete(id) {
+        const item = getHistoryItem(id);
+        if (!item) return;
+
+        openHistoryConfirmation(
+            'سيتم حذف هذا العنصر نهائيًا من سجل IndexedDB. لا يمكن التراجع عن هذا الإجراء.',
+            () => deleteOneHistoryItem(item.id)
+        );
+    }
+
+    function requestClearHistory() {
+        if (!appState.conversions.length) {
+            showToast('سجل التحويلات فارغ بالفعل', 'info');
+            return;
+        }
+
+        openHistoryConfirmation(
+            `سيتم حذف ${appState.conversions.length} عنصرًا نهائيًا من سجل IndexedDB.`,
+            deleteAllHistoryItems
+        );
+    }
+
+    async function confirmPendingAction() {
+        const action = pendingHistoryAction;
+        pendingHistoryAction = null;
+        closeModal('confirmModal');
+        if (!action) return;
+
+        try {
+            await action();
+        } catch (error) {
+            console.warn('History confirmation action failed:', error);
+            showToast('تعذر تنفيذ الإجراء على السجل', 'warning');
+        }
+    }
+
+    function cancelPendingAction() {
+        pendingHistoryAction = null;
+        closeModal('confirmModal');
+    }
+
+    async function deleteOneHistoryItem(id) {
+        await deleteHistoryFromDB(id);
+        appState.conversions = appState.conversions.filter(
+            item => String(item.id) !== String(id)
+        );
+        if (String(selectedHistoryId) === String(id)) {
+            selectedHistoryId = null;
+            closeModal('historyDetailsModal');
+        }
+        updateHistoryFilters();
+        updateHistoryList();
+        showToast('تم حذف العنصر من سجل التحويلات', 'success');
+    }
+
+    async function deleteAllHistoryItems() {
+        await clearHistoryDB();
+        appState.conversions = [];
+        appState.filteredConversions = [];
+        selectedHistoryId = null;
+        closeModal('historyDetailsModal');
+        updateHistoryFilters();
+        updateHistoryList();
+        showToast('تم حذف سجل التحويلات بالكامل', 'success');
+    }
+
+    function normalizeImportedHistoryItem(raw, index) {
+        if (!raw || typeof raw !== 'object') return null;
+
+        const input = raw.input ?? raw.original ?? raw['النص الأصلي'] ?? raw['النص'] ?? '';
+        const output = raw.output ?? raw.processed ?? raw['النص المحمي'] ?? raw['الناتج'] ?? '';
+        const type = raw.type ?? raw.joinerType ?? raw['طريقة الحماية'] ?? raw['الطريقة'] ?? 'U+2060';
+
+        if (typeof output !== 'string' || !output.trim()) return null;
+
+        const rawCreatedAt = raw.createdAt ?? raw.updatedAt ?? raw['تاريخ التحويل'];
+        const parsedDate = typeof rawCreatedAt === 'number'
+            ? rawCreatedAt
+            : Date.parse(String(rawCreatedAt || ''));
+        const createdAt = Number.isFinite(parsedDate) && parsedDate > 0
+            ? parsedDate
+            : Date.now() - index;
+
+        return normalizeHistoryItem({
+            id: createHistoryId(createdAt),
+            input: String(input || ''),
+            output,
+            type: String(type || 'U+2060'),
+            createdAt,
+            timestamp: raw.timestamp || raw['تاريخ التحويل'] || new Date(createdAt).toLocaleString('ar-SA')
+        }, index);
+    }
+
+    function getRecordsFromImportedJSON(value) {
+        if (Array.isArray(value)) return value;
+        if (Array.isArray(value?.items)) return value.items;
+        if (Array.isArray(value?.conversions)) return value.conversions;
+        if (Array.isArray(value?.history)) return value.history;
+        return [];
+    }
+
+    async function importHistoryRecords(records) {
+        const existingKeys = new Set(
+            appState.conversions.map(item => `${item.input}\u0000${item.output}\u0000${item.type}`)
+        );
+        const importedItems = [];
+
+        records.forEach((raw, index) => {
+            const item = normalizeImportedHistoryItem(raw, index);
+            if (!item) return;
+
+            const key = `${item.input}\u0000${item.output}\u0000${item.type}`;
+            if (existingKeys.has(key)) return;
+            existingKeys.add(key);
+            importedItems.push(item);
+        });
+
+        if (!importedItems.length) {
+            showToast('لم يتم العثور على سجلات جديدة صالحة للاستيراد', 'warning');
+            return 0;
+        }
+
+        await Promise.all(importedItems.map(item => putHistoryInDB(item)));
+        await trimHistoryDB();
+        await loadConversionHistory();
+        showToast(`تم استيراد ${importedItems.length} عنصرًا إلى السجل`, 'success');
+        return importedItems.length;
+    }
+
+    async function handleHistoryImport(event) {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (!file) return;
+
+        try {
+            let records;
+            const lowerName = file.name.toLocaleLowerCase('en');
+
+            if (lowerName.endsWith('.json') || file.type === 'application/json') {
+                const json = JSON.parse(await file.text());
+                records = getRecordsFromImportedJSON(json);
+            } else if (lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls')) {
+                if (!window.XLSX) {
+                    showToast('مكتبة Excel غير متاحة في النسخة الحالية', 'warning');
+                    return;
+                }
+
+                const buffer = await file.arrayBuffer();
+                const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                records = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
+            } else {
+                showToast('اختر ملف JSON أو Excel صالحًا', 'warning');
+                return;
             }
+
+            await importHistoryRecords(records);
+        } catch (error) {
+            console.warn('History import failed:', error);
+            showToast('تعذر قراءة الملف؛ تحقق من صيغته ومحتواه', 'error');
         }
     }
 
