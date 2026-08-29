@@ -53,9 +53,9 @@ if (manifest.display !== 'standalone' || !manifest.start_url || !Array.isArray(m
   process.exit(1);
 }
 
-if (!serviceWorker.includes("wordjoiner-pro-v15") || !serviceWorker.includes("'./arabic-text-formatter.js?v=2'") || !serviceWorker.includes("'./robots.txt'") || !serviceWorker.includes("'./sitemap.xml'")) {
+if (!serviceWorker.includes("wordjoiner-pro-v17") || !serviceWorker.includes("'./arabic-text-formatter.js?v=2'") || !serviceWorker.includes("'./robots.txt'") || !serviceWorker.includes("'./sitemap.xml'")) {
   console.error('Service Worker cache version or SEO assets are not up to date.');
   process.exit(1);
 }
 
-console.log(`Static validation passed: ${requiredFiles.length} required files, RTL metadata, formatter v2, export controls, and SW v15.`);
+console.log(`Static validation passed: ${requiredFiles.length} required files, RTL metadata, formatter v2, export controls, and SW v17.`);
